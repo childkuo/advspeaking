@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="如果跟我這樣說.....：輸入口語白話情境，自動補足 300 字內完整結構短文＋可切換 CEFR A1／A2／B1／B2 字彙難度的英文翻譯與發音，桌機單畫面零捲動＋手機底部 4 分頁操作。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="如果跟我這樣說.....：專為 iPad、平板、桌機與手機最佳化的雙語對話整理工作台，輸入口語白話自動補足 ≤300 字完整短文＋即時連動 CEFR A1–B2 英文翻譯與發音。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http://localhost:11434 https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self';">
-  <title>如果跟我這樣說..... — 300字完整短文 ＋ CEFR A1–B2 英文</title>
+  <title>如果跟我這樣說..... — iPad 友善雙語短文工作台（CEFR A1–B2）</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="libs/jszip.min.js" defer></script>
   <script src="libs/pptxgen.min.js" defer></script>
@@ -13,15 +15,16 @@
 </head>
 <body>
 
-  <div class="app-viewport no-print">
+  <div class="app-viewport no-print" id="app-root">
 
-    <!-- 頂部精簡導覽列 -->
+    <!-- 頂部 iPadOS 風格玻璃導覽列 -->
     <header class="topbar">
       <div class="topbar-left">
+        <button type="button" id="btn-toggle-focus" class="btn btn-icon desk-land-only" title="收合／展開左側輸入欄（雙語並排專注閱讀）" aria-pressed="false">◧</button>
         <span class="brand-mark" aria-hidden="true">說</span>
         <div class="brand-text">
           <div class="brand-title">如果跟我這樣說.....</div>
-          <div class="brand-sub">口語白話 → 300字完整短文 ＋ A1–B2 英文</div>
+          <div class="brand-sub">口語白話 → 300字短文 ＋ 連動 A1–B2 英文</div>
         </div>
         <div class="status-pill" title="中文文章字數上限 300 字與英文難度分級">
           <strong id="char-count-pill">0/300字</strong>
@@ -30,8 +33,8 @@
         </div>
       </div>
 
-      <!-- 桌機中央：語氣一鍵切換 -->
-      <div class="segmented desk-tone" id="tone-segmented" role="radiogroup" aria-label="表達語氣切換">
+      <!-- 中央：表達語氣膠囊切換（iPad 直向／橫向與桌機皆直接可見） -->
+      <div class="segmented top-tone" id="tone-segmented" role="radiogroup" aria-label="表達語氣切換">
         <button type="button" class="seg-btn active" data-tone="gentle_family" aria-checked="true">溫和親子</button>
         <button type="button" class="seg-btn" data-tone="teen_growth" aria-checked="false">青春自律</button>
         <button type="button" class="seg-btn" data-tone="teacher_record" aria-checked="false">師長輔導</button>
@@ -39,119 +42,156 @@
 
       <!-- 右側快捷動作 -->
       <div class="topbar-actions">
-        <button type="button" id="btn-open-ai" class="btn btn-ghost btn-xs">AI</button>
-        <button type="button" id="btn-reset" class="btn btn-ghost btn-xs">清空</button>
-        <button type="button" id="btn-export-word" class="btn btn-secondary btn-xs desk-only">Word</button>
-        <button type="button" id="btn-export-ppt" class="btn btn-secondary btn-xs desk-only">PPT</button>
-        <button type="button" id="btn-print" class="btn btn-primary btn-xs desk-only">列印 / PDF</button>
+        <button type="button" id="btn-open-ai" class="btn btn-ghost btn-top" title="設定離線或外接 AI 引擎">AI</button>
+        <button type="button" id="btn-reset" class="btn btn-ghost btn-top" title="清空目前內容">清空</button>
+        <button type="button" id="btn-export-word" class="btn btn-secondary btn-top desk-land-only">Word</button>
+        <button type="button" id="btn-export-ppt" class="btn btn-secondary btn-top desk-land-only">PPT</button>
+        <button type="button" id="btn-print" class="btn btn-primary btn-top tab-up-only">列印 / PDF</button>
       </div>
     </header>
 
-    <!-- 主工作台 -->
-    <main class="workbench">
+    <!-- 主容器：含 iPad 直向側邊觸控導覽軌 ＋ 主工作台 -->
+    <div class="app-body">
 
-      <!-- 左欄（桌機同時顯示輸入＋微調；手機分頁獨立全高顯示） -->
-      <aside class="left-pane" id="left-wrapper">
-        <section class="panel-card mob-pane mob-active" id="pane-input">
-          <div class="panel-head">
-            <h2>① 先說說發生的事</h2>
-            <button type="button" id="btn-auto-demo" class="btn btn-ghost btn-xs" title="快捷鍵 Alt+D">自動示範</button>
-          </div>
-          <select id="scenario-select" class="control select-full" aria-label="生活情境範例快選">
-            <option value="compound_3c_emotion">範例：熬夜玩手機＋甩門頂嘴（複合）</option>
-            <option value="3c_sleep">範例：3C 滑短影音熬夜遲到</option>
-            <option value="study_exam">範例：段考藏考卷＋缺交習作</option>
-            <option value="outing_safety">範例：補習提早下課晚歸未報備</option>
-            <option value="money_spend">範例：餐費課金透支＋借錢</option>
-            <option value="peer_social">範例：班級群組截圖起衝突</option>
-            <option value="boundary_item">範例：私拿耳機摔裂（隱私界限）</option>
-            <option value="chore_self">範例：家務拖延＋書桌髒亂</option>
-            <option value="safety_health">範例：騎車未戴安全帽搶黃燈</option>
-          </select>
-          <label for="raw-input" class="sr-only">輸入口語白話情境</label>
-          <textarea id="raw-input" class="control raw-box" rows="4" placeholder="用平常說話的方式打 1～2 句，幫你整理成「如果跟我這樣說.....」≤300 字完整短文 ＋ 可切換 A1–B2 難度的英文翻譯..."></textarea>
+      <!-- iPad 直向專屬（768px–1023px）：左側 84px 拇指觸控導覽軌 -->
+      <nav id="ipad-rail" class="ipad-rail" aria-label="iPad 直向分區導覽">
+        <button type="button" class="rail-btn" data-mtab="input">
+          <span class="rail-ico" aria-hidden="true">✍️</span>
+          <span>輸入</span>
+        </button>
+        <button type="button" class="rail-btn active" data-mtab="draft">
+          <span class="rail-ico" aria-hidden="true">📖</span>
+          <span>中英短文</span>
+        </button>
+        <button type="button" class="rail-btn" data-mtab="refine">
+          <span class="rail-ico" aria-hidden="true">💬</span>
+          <span>補一句</span>
+        </button>
+        <button type="button" class="rail-btn" data-mtab="steps">
+          <span class="rail-ico" aria-hidden="true">🧩</span>
+          <span>5D 結構</span>
+        </button>
+        <button type="button" class="rail-btn" data-mtab="export">
+          <span class="rail-ico" aria-hidden="true">📄</span>
+          <span>A4 匯出</span>
+        </button>
+      </nav>
 
-          <!-- 手機與平板語氣切換 -->
-          <div class="mob-tone-wrap">
-            <div class="mob-tone-label">表達語氣</div>
-            <div class="segmented seg-full" id="tone-segmented-mobile">
-              <button type="button" class="seg-btn active" data-tone="gentle_family">溫和親子</button>
-              <button type="button" class="seg-btn" data-tone="teen_growth">青春自律</button>
-              <button type="button" class="seg-btn" data-tone="teacher_record">師長輔導</button>
+      <!-- 主工作台 -->
+      <main class="workbench" id="workbench">
+
+        <!-- 左欄（iPad 橫向／桌機常駐可收合；iPad 直向與手機獨立全幅顯示） -->
+        <aside class="left-pane" id="left-wrapper">
+          <section class="panel-card mob-pane mob-active" id="pane-input">
+            <div class="panel-head">
+              <h2>① 先說說發生的事</h2>
+              <button type="button" id="btn-auto-demo" class="btn btn-ghost btn-sm" title="快捷鍵 Alt+D">自動示範</button>
+            </div>
+
+            <select id="scenario-select" class="control select-full" aria-label="生活情境範例快選">
+              <option value="compound_3c_emotion">範例：熬夜玩手機＋甩門頂嘴（複合）</option>
+              <option value="3c_sleep">範例：3C 滑短影音熬夜遲到</option>
+              <option value="study_exam">範例：段考藏考卷＋缺交習作</option>
+              <option value="outing_safety">範例：補習提早下課晚歸未報備</option>
+              <option value="money_spend">範例：餐費課金透支＋借錢</option>
+              <option value="peer_social">範例：班級群組截圖起衝突</option>
+              <option value="boundary_item">範例：私拿耳機摔裂（隱私界限）</option>
+              <option value="chore_self">範例：家務拖延＋書桌髒亂</option>
+              <option value="safety_health">範例：騎車未戴安全帽搶黃燈</option>
+            </select>
+
+            <label for="raw-input" class="sr-only">輸入口語白話情境</label>
+            <textarea id="raw-input" class="control raw-box" rows="4" placeholder="用平常說話的方式打 1～2 句，幫你整理成「如果跟我這樣說.....」≤300 字完整短文 ＋ 即時連動 A1–B2 英文翻譯..."></textarea>
+
+            <!-- 小螢幕手機語氣切換 -->
+            <div class="mob-tone-wrap">
+              <div class="mob-tone-label">表達語氣</div>
+              <div class="segmented seg-full" id="tone-segmented-mobile">
+                <button type="button" class="seg-btn active" data-tone="gentle_family">溫和親子</button>
+                <button type="button" class="seg-btn" data-tone="teen_growth">青春自律</button>
+                <button type="button" class="seg-btn" data-tone="teacher_record">師長輔導</button>
+              </div>
+            </div>
+
+            <button type="button" id="btn-generate" class="btn btn-primary btn-cta">幫我整理成 300字短文 ＋ 英文翻譯</button>
+          </section>
+
+          <section class="panel-card refine-panel mob-pane" id="pane-refine">
+            <div class="panel-head">
+              <h2>② 還想再補一句話</h2>
+            </div>
+            <p class="compact-only footer-tip">再補一句平常的話，系統自動融入文章並即時重寫 ≤300 字中文與對應難度英文。</p>
+            <div class="refine-row">
+              <label for="refine-input" class="sr-only">輸入補充白話</label>
+              <input type="text" id="refine-input" class="control flex-1" placeholder="再補一句，如：事後有道歉 / 約定11點收手機...">
+              <button type="button" id="btn-apply-refine" class="btn btn-primary btn-refine-go">融入</button>
+            </div>
+            <div class="hint-grid" id="refine-hints">
+              <button type="button" class="hint-chip" data-refine="其實事後他有主動小聲道歉">＋ 補事後道歉</button>
+              <button type="button" class="hint-chip" data-refine="真正原因是最近段考壓力太大">＋ 補段考壓力</button>
+              <button type="button" class="hint-chip" data-refine="約定平日晚上11點手機放客廳充電">＋ 補11點公約</button>
+              <button type="button" class="hint-chip" data-refine="這週主動洗碗倒垃圾當補償">＋ 補家事補償</button>
+            </div>
+            <div id="refine-feedback" class="refine-feedback" hidden></div>
+
+            <div class="left-footer">
+              <div class="legend-row">
+                <span class="badge badge-fact">中文 ≤ 300 字</span>
+                <span class="badge badge-confirmed">中英即時連動</span>
+                <span class="badge badge-inferred">CEFR A1–B2</span>
+              </div>
+              <div class="row-gap">
+                <button type="button" id="btn-copy-both" class="btn btn-secondary btn-touch flex-1">複製中英全文</button>
+                <button type="button" id="btn-speak-en-quick" class="btn btn-secondary btn-touch flex-1">🔊 朗讀 A2 英文</button>
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <!-- 右欄：雙語並排閱讀畫布 ＋ D1–D5 結構微調 ＋ A4 雙語單 -->
+        <section class="right-pane mob-pane" id="pane-right">
+          <div class="right-head" id="right-tabs-bar">
+            <nav class="right-tabs" id="right-tabs" aria-label="中英短文與對話結構切換">
+              <button type="button" class="rtab active" data-rtab="article">中英短文</button>
+              <button type="button" class="rtab" data-rtab="d1">D1 經過</button>
+              <button type="button" class="rtab" data-rtab="d2">D2 處置</button>
+              <button type="button" class="rtab" data-rtab="d3">D3 原因</button>
+              <button type="button" class="rtab" data-rtab="d4">D4 改善</button>
+              <button type="button" class="rtab" data-rtab="d5">D5 約定</button>
+              <button type="button" class="rtab desk-land-only" data-rtab="a4">A4 雙語單</button>
+            </nav>
+            <div class="right-head-meta">
+              <div class="font-size-switch" role="group" aria-label="閱讀字體大小" title="調整中英文閱讀字體大小">
+                <button type="button" class="fs-btn" data-fsize="sm">A-</button>
+                <button type="button" class="fs-btn active" data-fsize="md">A</button>
+                <button type="button" class="fs-btn" data-fsize="lg">A+</button>
+              </div>
+              <div id="domain-badges" class="domain-badges"></div>
             </div>
           </div>
 
-          <button type="button" id="btn-generate" class="btn btn-primary btn-cta">幫我整理成 300字短文 ＋ 英文翻譯</button>
+          <div id="right-canvas" class="right-canvas fs-md"></div>
+
+          <!-- 平板直向與手機專用匯出列 -->
+          <div id="mob-export-bar" class="mob-export-bar" hidden>
+            <button type="button" id="btn-mob-word" class="btn btn-secondary btn-touch">Word (.doc)</button>
+            <button type="button" id="btn-mob-ppt" class="btn btn-secondary btn-touch">PPT (.pptx)</button>
+            <button type="button" id="btn-mob-print" class="btn btn-primary btn-touch">列印 / PDF</button>
+          </div>
+
+          <div class="right-footer" id="step-nav-footer">
+            <span class="footer-tip desk-land-only">修改中文短文即自動連動英文；點左上 ◧ 可切換雙語全寬並排閱讀。</span>
+            <div class="row-gap step-nav-btns">
+              <button type="button" id="btn-prev-tab" class="btn btn-secondary btn-touch flex-1-mob">← 上一頁</button>
+              <button type="button" id="btn-next-tab" class="btn btn-primary btn-touch flex-1-mob">下一頁 →</button>
+            </div>
+          </div>
         </section>
 
-        <section class="panel-card refine-panel mob-pane" id="pane-refine">
-          <div class="panel-head">
-            <h2>② 還想再補一句話</h2>
-          </div>
-          <p class="mob-only footer-tip">再補一句平常的話，系統自動融入文章並即時更新 ≤300 字中文與對應難度英文。</p>
-          <div class="refine-row">
-            <label for="refine-input" class="sr-only">輸入補充白話</label>
-            <input type="text" id="refine-input" class="control flex-1" placeholder="再補一句話，如：事後有道歉 / 約定11點收手機...">
-            <button type="button" id="btn-apply-refine" class="btn btn-primary btn-refine-go">融入</button>
-          </div>
-          <div class="hint-grid" id="refine-hints">
-            <button type="button" class="hint-chip" data-refine="其實事後他有主動小聲道歉">＋ 補事後道歉</button>
-            <button type="button" class="hint-chip" data-refine="真正原因是最近段考壓力太大">＋ 補段考壓力</button>
-            <button type="button" class="hint-chip" data-refine="約定平日晚上11點手機放客廳充電">＋ 補11點公約</button>
-            <button type="button" class="hint-chip" data-refine="這週主動洗碗倒垃圾當補償">＋ 補家事補償</button>
-          </div>
-          <div id="refine-feedback" class="refine-feedback" hidden></div>
+      </main>
+    </div>
 
-          <div class="left-footer">
-            <div class="legend-row">
-              <span class="badge badge-fact">中文 ≤ 300 字</span>
-              <span class="badge badge-confirmed">CEFR A1–B2 切換</span>
-              <span class="badge badge-inferred">單字庫＋發音</span>
-            </div>
-            <div class="row-gap">
-              <button type="button" id="btn-copy-both" class="btn btn-ghost btn-touch flex-1">複製中英全文</button>
-              <button type="button" id="btn-speak-en-quick" class="btn btn-ghost btn-touch flex-1">🔊 朗讀 A2 英文</button>
-            </div>
-          </div>
-        </section>
-      </aside>
-
-      <!-- 右欄：7 分頁單畫面雙語工作畫布 -->
-      <section class="right-pane mob-pane" id="pane-right">
-        <div class="right-head" id="right-tabs-bar">
-          <nav class="right-tabs" id="right-tabs" aria-label="中英短文與對話結構切換">
-            <button type="button" class="rtab active" data-rtab="article">中英短文</button>
-            <button type="button" class="rtab" data-rtab="d1">D1 經過</button>
-            <button type="button" class="rtab" data-rtab="d2">D2 處置</button>
-            <button type="button" class="rtab" data-rtab="d3">D3 原因</button>
-            <button type="button" class="rtab" data-rtab="d4">D4 改善</button>
-            <button type="button" class="rtab" data-rtab="d5">D5 約定</button>
-            <button type="button" class="rtab desk-only" data-rtab="a4">A4 雙語單</button>
-          </nav>
-          <div id="domain-badges" class="domain-badges"></div>
-        </div>
-
-        <div id="right-canvas" class="right-canvas"></div>
-
-        <!-- 手機匯出專列 -->
-        <div id="mob-export-bar" class="mob-export-bar" hidden>
-          <button type="button" id="btn-mob-word" class="btn btn-secondary btn-touch">Word (.doc)</button>
-          <button type="button" id="btn-mob-ppt" class="btn btn-secondary btn-touch">PPT (.pptx)</button>
-          <button type="button" id="btn-mob-print" class="btn btn-primary btn-touch">列印 / PDF</button>
-        </div>
-
-        <div class="right-footer" id="step-nav-footer">
-          <span class="footer-tip desk-only">修改中文短文即自動連動英文翻譯；支援三種語氣與 A1–B2 難度即時同步。</span>
-          <div class="row-gap step-nav-btns">
-            <button type="button" id="btn-prev-tab" class="btn btn-secondary btn-touch flex-1-mob">← 上一頁</button>
-            <button type="button" id="btn-next-tab" class="btn btn-primary btn-touch flex-1-mob">下一頁 →</button>
-          </div>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- 手機專屬：底部 4 分頁拇指導覽列 -->
+    <!-- 手機專屬（< 768px）：底部 4 分頁拇指導覽列 -->
     <nav id="mobile-bottom-nav" class="mob-bottom-nav mob-only" aria-label="手機主功能切換">
       <button type="button" class="mnav active" data-mtab="input">
         <span class="mnav-ico" aria-hidden="true">✍️</span>
@@ -177,12 +217,12 @@
     <div class="modal-card">
       <div class="panel-head">
         <h3>「如果跟我這樣說.....」AI 引擎設定</h3>
-        <button type="button" id="btn-close-ai" class="btn btn-ghost btn-xs">關閉</button>
+        <button type="button" id="btn-close-ai" class="btn btn-ghost btn-sm">關閉</button>
       </div>
       <div class="field">
         <label for="llm-provider">生成引擎來源</label>
         <select id="llm-provider" class="control">
-          <option value="offline" selected>本機離線雙語引擎（預設・免 API Key・支援 A1–B2 字彙庫）</option>
+          <option value="offline" selected>本機離線雙語引擎（預設・免 API Key・支援 A1–B2）</option>
           <option value="gemini">Google Gemini API（可深度客製 ≤300字＋A1–B2 翻譯）</option>
           <option value="ollama">本機 Ollama 伺服器（http://localhost:11434）</option>
         </select>

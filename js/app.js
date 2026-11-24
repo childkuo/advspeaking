@@ -84,7 +84,7 @@
   }
 
   function isMobileView() {
-    return typeof window !== 'undefined' && window.innerWidth < 768;
+    return typeof window !== 'undefined' && window.innerWidth < 1024;
   }
 
   function setPath(obj, path, val) {
@@ -1800,6 +1800,13 @@
       nextBtn.textContent = (isMobileView() && tabId === 'd5') ? '前往 A4 / 匯出 →' : '下一頁 →';
       nextBtn.disabled = !isMobileView() && idx >= TAB_ORDER.length - 1;
     }
+    // iPad 直向側軌即時同步 active 狀態
+    if (isMobileView() && activeMobTab !== 'input' && activeMobTab !== 'refine') {
+      const railTarget = tabId === 'a4' ? 'export' : (tabId === 'article' ? 'draft' : 'steps');
+      document.querySelectorAll('#ipad-rail .rail-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mtab === railTarget);
+      });
+    }
     refreshAllViews(pulse);
   }
 
@@ -1814,9 +1821,10 @@
     const mobExpBar = document.getElementById('mob-export-bar');
     const stepFoot = document.getElementById('step-nav-footer');
 
+    const isRightPane = (mTab === 'draft' || mTab === 'steps' || mTab === 'export');
     paneIn.classList.toggle('mob-active', mTab === 'input');
     paneRef.classList.toggle('mob-active', mTab === 'refine');
-    paneRight.classList.toggle('mob-active', mTab === 'draft' || mTab === 'export');
+    paneRight.classList.toggle('mob-active', isRightPane);
 
     if (isMobileView()) {
       leftWrap.style.display = (mTab === 'input' || mTab === 'refine') ? 'flex' : 'none';
@@ -1830,12 +1838,17 @@
       stepFoot.style.display = '';
     }
 
+    const mobKey = mTab === 'steps' ? 'draft' : mTab;
     document.querySelectorAll('#mobile-bottom-nav .mnav').forEach(b => {
+      b.classList.toggle('active', b.dataset.mtab === mobKey);
+    });
+    document.querySelectorAll('#ipad-rail .rail-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.mtab === mTab);
     });
 
     if (mTab === 'export') switchRightTab('a4');
-    else if (mTab === 'draft' && activeRTab === 'a4') switchRightTab('article');
+    else if (mTab === 'steps') switchRightTab(['d1', 'd2', 'd3', 'd4', 'd5'].includes(activeRTab) ? activeRTab : 'd1');
+    else if (mTab === 'draft') switchRightTab('article');
   }
 
   /* -------------------- Word & 16:9 雙語 PPTX 匯出 -------------------- */
@@ -2012,6 +2025,39 @@
   }
 
   function initBrowser() {
+    const ipadRail = document.getElementById('ipad-rail');
+    if (ipadRail) {
+      ipadRail.addEventListener('click', e => {
+        const b = e.target.closest('.rail-btn');
+        if (b) switchMobileTab(b.dataset.mtab);
+      });
+    }
+
+    const focusBtn = document.getElementById('btn-toggle-focus');
+    const appRoot = document.getElementById('app-root');
+    if (focusBtn && appRoot) {
+      focusBtn.addEventListener('click', () => {
+        const on = appRoot.classList.toggle('focus-mode');
+        focusBtn.setAttribute('aria-pressed', String(on));
+        showToast(on ? '已切換為「雙語並排專注閱讀」模式' : '已展開左側輸入與微調欄');
+      });
+    }
+
+    const applyFontSize = sz => {
+      const valid = ['sm', 'md', 'lg'].includes(sz) ? sz : 'md';
+      const cv = document.getElementById('right-canvas');
+      if (cv) {
+        cv.classList.remove('fs-sm', 'fs-md', 'fs-lg');
+        cv.classList.add(`fs-${valid}`);
+      }
+      document.querySelectorAll('.fs-btn').forEach(b => b.classList.toggle('active', b.dataset.fsize === valid));
+      try { localStorage.setItem('5d_reader_fsize', valid); } catch (e) {}
+    };
+    document.querySelectorAll('.fs-btn').forEach(b => {
+      b.addEventListener('click', () => applyFontSize(b.dataset.fsize));
+    });
+    try { applyFontSize(localStorage.getItem('5d_reader_fsize') || 'md'); } catch (e) {}
+
     document.getElementById('mobile-bottom-nav').addEventListener('click', e => {
       const b = e.target.closest('.mnav');
       if (b) switchMobileTab(b.dataset.mtab);
@@ -2214,7 +2260,7 @@
       b.setAttribute('aria-checked', String(act));
     });
     switchRightTab('article');
-    switchMobileTab(isMobileView() ? 'input' : 'draft');
+    switchMobileTab(window.innerWidth < 768 ? 'input' : 'draft');
   }
 
   if (typeof document !== 'undefined') {
