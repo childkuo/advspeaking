@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="如果跟我這樣說.....：輸入口語白話情境，自動補足 300 字內完整結構短文＋台灣國中程度 CEFR A2 英文翻譯與核心單字發音，桌機單畫面零捲動＋手機底部 4 分頁操作。">
+  <meta name="description" content="如果跟我這樣說.....：輸入口語白話情境，自動補足 300 字內完整結構短文＋可切換 CEFR A1／A2／B1／B2 字彙難度的英文翻譯與發音，桌機單畫面零捲動＋手機底部 4 分頁操作。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http://localhost:11434 https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self';">
-  <title>如果跟我這樣說..... — 300字完整短文 ＋ 國中 A2 英文</title>
+  <title>如果跟我這樣說..... — 300字完整短文 ＋ CEFR A1–B2 英文</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="libs/jszip.min.js" defer></script>
   <script src="libs/pptxgen.min.js" defer></script>
@@ -21,12 +21,12 @@
         <span class="brand-mark" aria-hidden="true">說</span>
         <div class="brand-text">
           <div class="brand-title">如果跟我這樣說.....</div>
-          <div class="brand-sub">口語白話 → 300字完整短文 ＋ 國中 A2 英文</div>
+          <div class="brand-sub">口語白話 → 300字完整短文 ＋ A1–B2 英文</div>
         </div>
-        <div class="status-pill" title="中文文章字數上限 300 字與英文分級">
+        <div class="status-pill" title="中文文章字數上限 300 字與英文難度分級">
           <strong id="char-count-pill">0/300字</strong>
           <span class="pill-sep hide-xs"></span>
-          <span class="hide-xs">CEFR A2</span>
+          <span id="cefr-pill" class="hide-xs">CEFR A2</span>
         </div>
       </div>
 
@@ -69,7 +69,7 @@
             <option value="safety_health">範例：騎車未戴安全帽搶黃燈</option>
           </select>
           <label for="raw-input" class="sr-only">輸入口語白話情境</label>
-          <textarea id="raw-input" class="control raw-box" rows="4" placeholder="用平常說話的方式打 1～2 句，幫你整理成「如果跟我這樣說.....」≤300 字完整短文 ＋ 國中 A2 英文翻譯..."></textarea>
+          <textarea id="raw-input" class="control raw-box" rows="4" placeholder="用平常說話的方式打 1～2 句，幫你整理成「如果跟我這樣說.....」≤300 字完整短文 ＋ 可切換 A1–B2 難度的英文翻譯..."></textarea>
 
           <!-- 手機與平板語氣切換 -->
           <div class="mob-tone-wrap">
@@ -81,14 +81,14 @@
             </div>
           </div>
 
-          <button type="button" id="btn-generate" class="btn btn-primary btn-cta">幫我整理成 300字短文 ＋ A2 英文</button>
+          <button type="button" id="btn-generate" class="btn btn-primary btn-cta">幫我整理成 300字短文 ＋ 英文翻譯</button>
         </section>
 
         <section class="panel-card refine-panel mob-pane" id="pane-refine">
           <div class="panel-head">
             <h2>② 還想再補一句話</h2>
           </div>
-          <p class="mob-only footer-tip">再補一句平常的話，系統自動融入文章並即時更新 ≤300 字中文與國中 A2 英文。</p>
+          <p class="mob-only footer-tip">再補一句平常的話，系統自動融入文章並即時更新 ≤300 字中文與對應難度英文。</p>
           <div class="refine-row">
             <label for="refine-input" class="sr-only">輸入補充白話</label>
             <input type="text" id="refine-input" class="control flex-1" placeholder="再補一句話，如：事後有道歉 / 約定11點收手機...">
@@ -105,7 +105,7 @@
           <div class="left-footer">
             <div class="legend-row">
               <span class="badge badge-fact">中文 ≤ 300 字</span>
-              <span class="badge badge-confirmed">國中 CEFR A2 英文</span>
+              <span class="badge badge-confirmed">CEFR A1–B2 切換</span>
               <span class="badge badge-inferred">單字庫＋發音</span>
             </div>
             <div class="row-gap">
@@ -141,7 +141,7 @@
         </div>
 
         <div class="right-footer" id="step-nav-footer">
-          <span class="footer-tip desk-only">自動嚴格控制中文 ≤ 300 字；點擊任一 A2 單字即可聽英語發音。</span>
+          <span class="footer-tip desk-only">中文嚴格 ≤ 300 字；可隨時切換英文難度 A1 / A2 / B1 / B2 並點擊單字發音。</span>
           <div class="row-gap step-nav-btns">
             <button type="button" id="btn-prev-tab" class="btn btn-secondary btn-touch flex-1-mob">← 上一頁</button>
             <button type="button" id="btn-next-tab" class="btn btn-primary btn-touch flex-1-mob">下一頁 →</button>
@@ -182,8 +182,8 @@
       <div class="field">
         <label for="llm-provider">生成引擎來源</label>
         <select id="llm-provider" class="control">
-          <option value="offline" selected>本機離線雙語引擎（預設・免 API Key・含國中 A2 字彙庫）</option>
-          <option value="gemini">Google Gemini API（可深度客製 ≤300字＋A2 翻譯）</option>
+          <option value="offline" selected>本機離線雙語引擎（預設・免 API Key・支援 A1–B2 字彙庫）</option>
+          <option value="gemini">Google Gemini API（可深度客製 ≤300字＋A1–B2 翻譯）</option>
           <option value="ollama">本機 Ollama 伺服器（http://localhost:11434）</option>
         </select>
       </div>

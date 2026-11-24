@@ -1,18 +1,47 @@
 /**
- * 如果跟我這樣說..... — 口語白話 → ≤300 字完整結構短文 ＋ 國中程度 CEFR A2 英文翻譯
+ * 如果跟我這樣說..... — 口語白話 → ≤300 字完整結構短文 ＋ CEFR A1 / A2 / B1 / B2 英文翻譯
  * 支援 100% 離線雙語引擎 ＋ 選填 Gemini／Ollama，桌機單畫面零捲動 ＋ 手機底部 4 分頁導覽
  */
 (() => {
   'use strict';
 
-  const STORAGE_KEY = '5d_teen_bilingual_a2_v1';
+  const STORAGE_KEY = '5d_teen_bilingual_cefr_v2';
   const MAX_ZH_CHARS = 300;
   const TAB_ORDER = ['article', 'd1', 'd2', 'd3', 'd4', 'd5', 'a4'];
+  const CEFR_ORDER = ['A1', 'A2', 'B1', 'B2'];
   const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
   const TONE_LABELS = {
     gentle_family: '溫和親子對話版',
     teen_growth: '青春自律成長版',
     teacher_record: '師長輔導紀錄版'
+  };
+
+  const CEFR_META = {
+    A1: {
+      code: 'A1',
+      short: '入門',
+      title: '入門基礎・CEFR A1',
+      promptSpec: 'CEFR A1 入門程度（國小高年級～國一），只用最常見基礎單字與超短直白句型（每句 6～12 字）'
+    },
+    A2: {
+      code: 'A2',
+      short: '國中',
+      title: '國中程度・CEFR A2',
+      promptSpec: '台灣國中英文程度（CEFR A2 基礎核心字彙與簡單清晰句型，避免艱深字）'
+    },
+    B1: {
+      code: 'B1',
+      short: '高中',
+      title: '高中進階・CEFR B1',
+      promptSpec: '台灣高中英文程度（CEFR B1 中級字彙、轉折連接詞與流暢複合句型）'
+    },
+    B2: {
+      code: 'B2',
+      short: '流利',
+      title: '高階流利・CEFR B2',
+      promptSpec: 'CEFR B2 中高級流利程度，使用精準抽象詞彙、分詞構句與自然道地的書面表達'
+    }
   };
 
   /* -------------------- 基礎安全與輔助函式 -------------------- */
@@ -98,10 +127,10 @@
     u.lang = 'en-US';
     u.rate = rate;
     window.speechSynthesis.speak(u);
-    showToast(rate < 1 ? '慢速朗讀 A2 英文中...' : '朗讀 A2 英文中...');
+    showToast(rate < 1 ? `慢速朗讀 ${activeCefr} 英文中...` : `朗讀 ${activeCefr} 英文中...`);
   }
 
-  /* -------------------- 9 大國高中情境範例與雙語知識庫 -------------------- */
+  /* -------------------- 9 大國高中情境範例與四階 CEFR (A1–B2) 雙語知識庫 -------------------- */
   const SCENARIOS = {
     compound_3c_emotion: '昨晚弟弟熬夜玩手遊到凌晨一點多不肯睡，今天早上媽媽叫他起床去學校遲到了，他還嫌媽媽囉唆直接甩門發脾氣。',
     '3c_sleep': '我昨天晚上躲在房間滑手機看短影音到凌晨兩點才睡，結果今天早上鬧鐘響了叫不起來，第一節課大遲到。',
@@ -116,7 +145,8 @@
 
   const KB = {
     '3c_sleep': {
-      id: '3c_sleep', label: '3C 與睡眠作息', enLabel: 'phone habits and sleep',
+      id: '3c_sleep', label: '3C 與睡眠作息',
+      enLabel: { A1: 'phone and sleep', A2: 'phone habits and sleep', B1: 'sleep schedules and screen use', B2: 'sleep hygiene and digital self-regulation' },
       kw: /(手機|手遊|短影音|抖音|IG|YouTube|追劇|遊戲|Switch|平板|電腦|熬夜|凌晨|清晨|半夜|遲到|睡過頭|起不來|叫不醒|睡眠|打瞌睡)/g,
       title: a => `${a}夜間使用手機與作息調整`,
       when: '昨晚至今天早上', where: '家中臥室', item: '手機',
@@ -125,25 +155,28 @@
       d3: '白天課業壓力大，想靠熬夜滑手機換取自由時間，加上手機放床邊缺少停損界限。',
       d4: '客廳設手機充電區，改用實體鬧鐘起床，並安排每天放學後 30 分鐘合法放鬆時間。',
       d5: '訂立作息公約：平日晚上固定時間手機放客廳充電，連續一週零遲到給予肯定。',
-      en: {
-        d1: (s, t) => `${t}, ${s.subj} stayed up very late playing on the phone, so ${s.subjLow} got up late and was late for school.`,
-        d2: (s) => `First, ${s.we} stayed calm and made sure ${s.subjLow} got to school safely without fighting in the morning.`,
-        d3: (s) => `The real reason was school stress. ${s.Subj} wanted some free time at night, and keeping the phone by the bed made it hard to stop.`,
-        d4: (s) => `To make things better, ${s.subjLow} will put the phone in the living room before bed, use a real alarm clock, and take a 30-minute break after school.`,
-        d5: (s) => `Finally, ${s.we} made a family rule: put the phone outside the bedroom on school nights and arrive at school on time.`
-      },
-      vocab: [
-        ['stay up late', 'phr.', '熬夜'],
-        ['late for school', 'phr.', '上學遲到'],
-        ['calm', 'adj.', '冷靜的'],
-        ['stress', 'n.', '壓力'],
-        ['living room', 'n.', '客廳'],
-        ['alarm clock', 'n.', '鬧鐘'],
-        ['rule', 'n.', '規則／公約']
-      ]
+      levels: {
+        A1: {
+          text: (s, t) => `${t}, ${s.subj} played on ${s.poss} phone very late. ${s.Subj} got up late for school. First, ${s.we} did not fight, and ${s.subjLow} went to school safely. School was hard, and the phone was next to the bed. Next, ${s.subjLow} will put the phone in the living room at night and use a clock. Now ${s.we} have a home rule: no phone in bed on school nights.`,
+          vocab: [['late', 'adj./adv.', '晚／遲到'], ['phone', 'n.', '手機'], ['fight', 'v.', '吵架'], ['bed', 'n.', '床'], ['clock', 'n.', '時鐘'], ['rule', 'n.', '規定']]
+        },
+        A2: {
+          text: (s, t) => `${t}, ${s.subj} stayed up very late playing on the phone, so ${s.subjLow} got up late and was late for school. First, ${s.we} stayed calm and made sure ${s.subjLow} got to school safely without fighting in the morning. The real reason was school stress. ${s.Subj} wanted some free time at night, and keeping the phone by the bed made it hard to stop. To make things better, ${s.subjLow} will put the phone in the living room before bed, use a real alarm clock, and take a 30-minute break after school. Finally, ${s.we} made a family rule: put the phone outside the bedroom on school nights and arrive at school on time.`,
+          vocab: [['stay up late', 'phr.', '熬夜'], ['late for school', 'phr.', '上學遲到'], ['calm', 'adj.', '冷靜的'], ['stress', 'n.', '壓力'], ['living room', 'n.', '客廳'], ['alarm clock', 'n.', '鬧鐘'], ['rule', 'n.', '規則／公約']]
+        },
+        B1: {
+          text: (s, t) => `${t}, ${s.subj} stayed up past midnight scrolling on ${s.poss} phone, which caused ${s.obj} to oversleep and arrive late for school. To handle the situation properly, ${s.we} avoided a morning argument and focused on getting to school safely first. Looking deeper, heavy academic pressure made ${s.obj} seek freedom late at night, and keeping the phone beside the bed removed any clear boundary. Going forward, ${s.subjLow} will charge the phone in the living room, rely on a traditional alarm clock, and schedule a 30-minute break after school. In the end, ${s.we} established a routine: leave phones outside the bedroom on school nights and keep punctual attendance.`,
+          vocab: [['oversleep', 'v.', '睡過頭'], ['argument', 'n.', '爭執'], ['academic', 'adj.', '課業的'], ['boundary', 'n.', '界限'], ['rely on', 'phr.', '依賴'], ['establish', 'v.', '建立'], ['punctual', 'adj.', '準時的']]
+        },
+        B2: {
+          text: (s, t) => `${t}, ${s.subj} remained awake past midnight absorbed in ${s.poss} phone, inevitably oversleeping and missing the start of school. Rather than escalating tensions during a hectic morning, ${s.we} prioritized a calm departure and agreed to address the issue afterward. Upon reflection, persistent academic pressure fueled a desire for late-night autonomy, while bedside access to the device undermined self-restraint. To prevent a recurrence, ${s.subjLow} will designate a charging spot in the living room, switch to an analog alarm, and set aside a guilt-free 30-minute unwind window after school. Ultimately, ${s.we} reached a mutual commitment to keep devices out of the bedroom on weeknights and sustain consistent punctuality.`,
+          vocab: [['inevitably', 'adv.', '不可避免地'], ['escalate', 'v.', '升級／擴大'], ['prioritize', 'v.', '優先處理'], ['autonomy', 'n.', '自主權'], ['undermine', 'v.', '削弱'], ['recurrence', 'n.', '再次發生'], ['mutual', 'adj.', '共同的']]
+        }
+      }
     },
     emotion_comm: {
-      id: 'emotion_comm', label: '情緒與親子溝通', enLabel: 'anger and family talks',
+      id: 'emotion_comm', label: '情緒與親子溝通',
+      enLabel: { A1: 'anger at home', A2: 'anger and family talks', B1: 'emotional control at home', B2: 'emotional regulation and dialogue' },
       kw: /(發脾氣|大發脾氣|甩門|頂嘴|大吼|大叫|吵起來|冷戰|擺臭臉|嫌囉唆|嫌麻煩|不耐煩|罵髒話|摔東西|口氣差|嗆|生氣)/g,
       title: a => `${a}情緒管理與好好說話`,
       when: '今天溝通時段', where: '家中客廳與房門', item: '親子溝通',
@@ -152,25 +185,28 @@
       d3: '當下壓力與煩躁已達臨界點，又缺乏「喊暫停」的溝通暗號，才會用甩門防衛。',
       d4: '為衝動口氣誠懇道歉，並建立「我需要冷靜 15 分鐘」暫停暗號，大人也減少重複催促。',
       d5: '訂立溝通公約：生氣不甩門、不冷戰，先冷靜再說出心裡真正的感受。',
-      en: {
-        d1: (s, t) => `${t}, ${s.subj} got very angry during a talk at home, shouted back, and closed the door hard.`,
-        d2: (s) => `First, everyone took a 15-minute break to calm down so nobody said hurtful words.`,
-        d3: (s) => `The main reason was too much stress. ${s.Subj} felt pushed and did not know how to ask for space nicely.`,
-        d4: (s) => `Next, ${s.subjLow} said sorry for being rude. We also made a quiet sign: anyone can say "I need 15 minutes" before a fight starts.`,
-        d5: (s) => `Finally, we agreed on a family rule: no shouting or slamming doors, and always talk nicely after we cool down.`
-      },
-      vocab: [
-        ['angry', 'adj.', '生氣的'],
-        ['shout', 'v.', '大叫／吼叫'],
-        ['take a break', 'phr.', '休息一下'],
-        ['hurtful', 'adj.', '傷人的'],
-        ['say sorry', 'phr.', '道歉'],
-        ['rude', 'adj.', '沒禮貌的'],
-        ['agree', 'v.', '同意／約定']
-      ]
+      levels: {
+        A1: {
+          text: (s, t) => `${t}, ${s.subj} got very angry at home and closed the door hard. First, everyone stopped talking for 15 minutes to cool down. ${s.Subj} felt tired and upset, and did not know how to ask for quiet time. Next, ${s.subjLow} said sorry. Now anyone can say, "I need 15 minutes." Our family rule is simple: do not shout, and talk nicely when calm.`,
+          vocab: [['angry', 'adj.', '生氣的'], ['door', 'n.', '門'], ['stop', 'v.', '停止'], ['tired', 'adj.', '累的'], ['sorry', 'adj.', '抱歉的'], ['quiet', 'adj.', '安靜的']]
+        },
+        A2: {
+          text: (s, t) => `${t}, ${s.subj} got very angry during a talk at home, shouted back, and closed the door hard. First, everyone took a 15-minute break to calm down so nobody said hurtful words. The main reason was too much stress. ${s.Subj} felt pushed and did not know how to ask for space nicely. Next, ${s.subjLow} said sorry for being rude. We also made a quiet sign: anyone can say "I need 15 minutes" before a fight starts. Finally, we agreed on a family rule: no shouting or slamming doors, and always talk nicely after we cool down.`,
+          vocab: [['angry', 'adj.', '生氣的'], ['shout', 'v.', '大叫／吼叫'], ['take a break', 'phr.', '休息一下'], ['hurtful', 'adj.', '傷人的'], ['say sorry', 'phr.', '道歉'], ['rude', 'adj.', '沒禮貌的'], ['agree', 'v.', '同意／約定']]
+        },
+        B1: {
+          text: (s, t) => `${t}, ${s.subj} lost ${s.poss} temper during a family conversation, talked back loudly, and slammed the bedroom door. Immediately, both sides stepped back for 15 minutes to breathe and prevent saying anything deeply hurtful. Looking at the cause, built-up frustration reached a breaking point, and there was no agreed signal to pause the discussion. Moving forward, ${s.subjLow} apologized sincerely for ${s.poss} harsh tone, and we introduced a clear timeout phrase while parents also cut back on repeated reminders. Together, we set a communication rule: never slam doors or give the silent treatment, and express true feelings calmly.`,
+          vocab: [['temper', 'n.', '脾氣'], ['slam', 'v.', '用力甩／關'], ['frustration', 'n.', '挫折感'], ['apologize', 'v.', '道歉'], ['sincerely', 'adv.', '誠懇地'], ['harsh', 'adj.', '嚴厲／刺耳的'], ['signal', 'n.', '暗號／訊號']]
+        },
+        B2: {
+          text: (s, t) => `${t}, ${s.subj} reacted defensively during a household exchange, snapping back and slamming the door in frustration. To de-escalate the confrontation, everyone observed a 15-minute cooling-off period before resuming dialogue. Underlying the outburst was accumulated pressure paired with the absence of a constructive mechanism to request space. As a corrective step, ${s.subjLow} offered a sincere apology for ${s.poss} impulsive tone, and the family adopted an explicit pause cue alongside fewer repetitive prompts from adults. Ultimately, we affirmed a respectful norm: reject door-slamming and stonewalling in favor of composed, honest communication.`,
+          vocab: [['defensively', 'adv.', '防衛性地'], ['de-escalate', 'v.', '緩和降溫'], ['confrontation', 'n.', '衝突對峙'], ['accumulated', 'adj.', '累積的'], ['constructive', 'adj.', '具建設性的'], ['impulsive', 'adj.', '衝動的'], ['composed', 'adj.', '鎮定冷靜的']]
+        }
+      }
     },
     study_exam: {
-      id: 'study_exam', label: '課業與誠信自律', enLabel: 'homework and school tests',
+      id: 'study_exam', label: '課業與誠信自律',
+      enLabel: { A1: 'homework and tests', A2: 'homework and school tests', B1: 'schoolwork and honesty', B2: 'academic accountability' },
       kw: /(段考|期中考|期末考|考卷|成績單|不及格|考差|考很差|作業|功課|習作|聯絡簿|沒交|缺交|沒寫|抄襲|作弊|代簽|藏考卷|隱瞞成績)/g,
       title: a => `${a}課業面對與誠實求助`,
       when: '這週上課期間', where: '學校與家中書桌', item: '作業與考卷',
@@ -179,25 +215,28 @@
       d3: '因為考差怕被責罵，加上不會寫不敢發問，才選擇拖延與藏起來逃避。',
       d4: '將作業拆成每天 25 分鐘小進度完成，睡前核對書包，遇到難題 24 小時內主動求助。',
       d5: '訂立學習公約：成績可以不完美，但考卷必誠實呈現；大人先協助找方法不情緒責罵。',
-      en: {
-        d1: (s, t) => `${t}, ${s.subj} did not hand in homework on time and hid a bad math test paper at home until the teacher called.`,
-        d2: (s) => `First, we checked all the missing homework together and asked the teacher for a new date to turn it in.`,
-        d3: (s) => `The real reason was fear. ${s.Subj} felt scared of getting scolded and felt shy about asking questions when the work was hard.`,
-        d4: (s) => `Next, ${s.subjLow} will study for 25 minutes each evening without a phone and check the school bag before bed.`,
-        d5: (s) => `Finally, we made an honest rule: always show test papers within one day, and parents will help find better study ways instead of yelling.`
-      },
-      vocab: [
-        ['hand in', 'phr.', '繳交'],
-        ['hide (hid)', 'v.', '藏起來'],
-        ['missing', 'adj.', '缺漏的'],
-        ['scared', 'adj.', '害怕的'],
-        ['shy', 'adj.', '害羞的'],
-        ['check', 'v.', '檢查'],
-        ['honest', 'adj.', '誠實的']
-      ]
+      levels: {
+        A1: {
+          text: (s, t) => `${t}, ${s.subj} hid a bad math test and did not give homework to the teacher. First, we made a list of missing work and called the teacher. ${s.Subj} felt afraid of being yelled at and did not ask for help. Next, ${s.subjLow} will study for 25 minutes every night and check ${s.poss} bag before bed. Our new rule: always show tests honestly, and parents will help nicely.`,
+          vocab: [['test', 'n.', '考試'], ['homework', 'n.', '作業'], ['afraid', 'adj.', '害怕的'], ['study', 'v.', '讀書'], ['bag', 'n.', '書包'], ['help', 'v./n.', '幫忙']]
+        },
+        A2: {
+          text: (s, t) => `${t}, ${s.subj} did not hand in homework on time and hid a bad math test paper at home until the teacher called. First, we checked all the missing homework together and asked the teacher for a new date to turn it in. The real reason was fear. ${s.Subj} felt scared of getting scolded and felt shy about asking questions when the work was hard. Next, ${s.subjLow} will study for 25 minutes each evening without a phone and check the school bag before bed. Finally, we made an honest rule: always show test papers within one day, and parents will help find better study ways instead of yelling.`,
+          vocab: [['hand in', 'phr.', '繳交'], ['hide (hid)', 'v.', '藏起來'], ['missing', 'adj.', '缺漏的'], ['scared', 'adj.', '害怕的'], ['shy', 'adj.', '害羞的'], ['check', 'v.', '檢查'], ['honest', 'adj.', '誠實的']]
+        },
+        B1: {
+          text: (s, t) => `${t}, ${s.subj} failed to submit math assignments for several days and concealed a disappointing exam paper until the homeroom teacher contacted home. Right away, we listed every overdue assignment and reached out to the teacher to confirm a makeup deadline. The underlying cause was anxiety over criticism and hesitation to seek help on difficult problems. Going forward, ${s.subjLow} will break homework into 25-minute daily sessions, inspect ${s.poss} backpack before sleep, and ask for support within 24 hours whenever stuck. Ultimately, we agreed that imperfect grades are acceptable as long as test papers are shared honestly without harsh blame.`,
+          vocab: [['submit', 'v.', '繳交'], ['conceal', 'v.', '隱瞞／藏匿'], ['disappointing', 'adj.', '令人失望的'], ['overdue', 'adj.', '逾期的'], ['anxiety', 'n.', '焦慮'], ['hesitation', 'n.', '猶豫'], ['acceptable', 'adj.', '可接受的']]
+        },
+        B2: {
+          text: (s, t) => `${t}, ${s.subj} withheld a poor midterm math paper and repeatedly missed workbook deadlines until the homeroom teacher intervened. To stabilize the situation, we audited all outstanding tasks together and proactively coordinated a realistic submission schedule with the teacher. Fundamentally, fear of reprimand combined with reluctance to expose academic gaps drove avoidance and procrastination. To rebuild momentum, ${s.subjLow} will tackle coursework in focused 25-minute intervals, verify ${s.poss} bag nightly, and request guidance within 24 hours of hitting an obstacle. Going forward, we established a transparent compact: grades need not be flawless, yet honesty is non-negotiable, met with problem-solving rather than scolding.`,
+          vocab: [['withhold', 'v.', '隱瞞不報'], ['intervene', 'v.', '介入處理'], ['proactively', 'adv.', '主動積極地'], ['reprimand', 'n.', '斥責'], ['reluctance', 'n.', '不願／顧慮'], ['procrastination', 'n.', '拖延'], ['transparent', 'adj.', '透明坦誠的']]
+        }
+      }
     },
     outing_safety: {
-      id: 'outing_safety', label: '外出與行蹤安全', enLabel: 'going out safely',
+      id: 'outing_safety', label: '外出與行蹤安全',
+      enLabel: { A1: 'going out late', A2: 'going out safely', B1: 'outing check-ins', B2: 'safety communication' },
       kw: /(晚歸|沒回家|未歸|失聯|找不到人|翹課|翹補習|補習班|提早下課|逛街|西門町|網咖|KTV|宵夜|去玩|未報備|沒告知|沒傳訊息|報警)/g,
       title: a => `${a}課後外出與安全報備`,
       when: '昨晚課後至深夜', where: '校外商圈與返家途中', item: '課後行蹤報備',
@@ -206,25 +245,28 @@
       d3: '擔心先問會被拒絕而心存僥倖，也低估了聯絡不到人讓父母產生的恐慌。',
       d4: '養成 30 秒報備四要素（去哪、跟誰、幾點回、怎麼回），並設父母來電穿透靜音。',
       d5: '訂立外出公約：行程變動出發前必傳訊息報平安，連續準時報備即維持社交自主權。',
-      en: {
-        d1: (s, t) => `${t}, ${s.subj} went out with friends after cram school and came home very late without sending a message to family.`,
-        d2: (s) => `First, we made sure ${s.subjLow} came home safely, calmed down, and talked clearly about where ${s.subjLow} went.`,
-        d3: (s) => `The reason was worry about hearing "no." ${s.Subj} did not think about how scared parents feel when they cannot reach their child.`,
-        d4: (s) => `Next, ${s.subjLow} will send a quick message with the place, friends, and time before going anywhere, and keep the phone ring on for parents.`,
-        d5: (s) => `Finally, we agreed on a safety rule: always text before changing plans, and parents will trust ${s.obj} to enjoy time with friends.`
-      },
-      vocab: [
-        ['cram school', 'n.', '補習班'],
-        ['message', 'n.', '訊息'],
-        ['safely', 'adv.', '平安地'],
-        ['reach', 'v.', '聯絡上'],
-        ['change plans', 'phr.', '改變計畫'],
-        ['safety', 'n.', '安全'],
-        ['trust', 'v.', '信任']
-      ]
+      levels: {
+        A1: {
+          text: (s, t) => `${t}, ${s.subj} went shopping with friends after class and came home very late without telling family. First, we were glad ${s.subjLow} got home safe, and ${s.subjLow} told us where ${s.subjLow} went. ${s.Subj} thought parents would say no. Next, ${s.subjLow} will send a short message before going out and answer parents' calls. Our family rule: always text before changing plans.`,
+          vocab: [['shopping', 'n.', '逛街'], ['friends', 'n.', '朋友'], ['safe', 'adj.', '安全的'], ['tell (told)', 'v.', '告訴'], ['short', 'adj.', '簡短的'], ['call', 'n./v.', '電話／打電話']]
+        },
+        A2: {
+          text: (s, t) => `${t}, ${s.subj} went out with friends after cram school and came home very late without sending a message to family. First, we made sure ${s.subjLow} came home safely, calmed down, and talked clearly about where ${s.subjLow} went. The reason was worry about hearing "no." ${s.Subj} did not think about how scared parents feel when they cannot reach their child. Next, ${s.subjLow} will send a quick message with the place, friends, and time before going anywhere, and keep the phone ring on for parents. Finally, we agreed on a safety rule: always text before changing plans, and parents will trust ${s.obj} to enjoy time with friends.`,
+          vocab: [['cram school', 'n.', '補習班'], ['message', 'n.', '訊息'], ['safely', 'adv.', '平安地'], ['reach', 'v.', '聯絡上'], ['change plans', 'phr.', '改變計畫'], ['safety', 'n.', '安全'], ['trust', 'v.', '信任']]
+        },
+        B1: {
+          text: (s, t) => `${t}, ${s.subj} hung out downtown with classmates after cram school ended early and returned home late at night without notifying family. Once ${s.subjLow} arrived safely, we calmed our nerves and went over where ${s.subjLow} had been and who was there. The root cause was fearing refusal while underestimating how panicked parents become when they lose contact. From now on, ${s.subjLow} will send a 30-second update covering destination, companions, return time, and transport, and allow parents' calls to bypass silent mode. We agreed on a fair outing rule: always check in before changing plans in order to keep social independence.`,
+          vocab: [['notify', 'v.', '通知'], ['refusal', 'n.', '拒絕'], ['underestimate', 'v.', '低估'], ['panicked', 'adj.', '恐慌的'], ['destination', 'n.', '目的地'], ['companion', 'n.', '同伴'], ['independence', 'n.', '獨立自主']]
+        },
+        B2: {
+          text: (s, t) => `${t}, ${s.subj} detoured downtown with peers following an early cram-school dismissal and returned well past curfew without prior notice, causing severe parental alarm. After confirming ${s.poss} safe arrival, we eased tensions and reviewed ${s.poss} itinerary candidly. Behind the lapse lay apprehension of being turned down alongside a failure to grasp the sheer distress caused by being unreachable. Moving forward, ${s.subjLow} will transmit a concise 30-second briefing—location, company, return time, and transit—while whitelisting parental calls through silent mode. Collectively, we affirmed a trust-based pact: timely check-ins prior to any schedule change preserve social autonomy.`,
+          vocab: [['detour', 'v.', '繞道而行'], ['curfew', 'n.', '門禁時間'], ['itinerary', 'n.', '行程'], ['candidly', 'adv.', '坦白地'], ['apprehension', 'n.', '憂慮'], ['unreachable', 'adj.', '失聯的'], ['concise', 'adj.', '簡潔的']]
+        }
+      }
     },
     money_spend: {
-      id: 'money_spend', label: '金錢與財務自律', enLabel: 'spending money wisely',
+      id: 'money_spend', label: '金錢與財務自律',
+      enLabel: { A1: 'spending money', A2: 'spending money wisely', B1: 'budgeting allowance', B2: 'financial discipline' },
       kw: /([0-9一二兩三四五六七八九十百千萬]+元|塊錢|餐費|早餐錢|午餐錢|零用錢|壓歲錢|生活費|點數卡|儲值|課金|網購|蝦皮|刷卡|借錢|欠錢|透支|花光|超商)/g,
       title: a => `${a}零用錢管理與理性消費`,
       when: '這個月消費期間', where: '超商與學校', item: '餐費與零用錢',
@@ -233,25 +275,28 @@
       d3: '餐費和娛樂費混放又沒記帳，面對遊戲點數限時誘惑時缺少冷靜緩衝。',
       d4: '改用分袋管理把吃飯錢與娛樂費分開，逾 300 元消費先等 24 小時，並分期償還透支。',
       d5: '訂立理財公約：每週日簡單記帳核對餘額，遇資金困難誠實找家人商量絕不私下借錢。',
-      en: {
-        d1: (s, t) => `${t}, ${s.subj} spent lunch money on game cards at a store, so there was no money left for food and ${s.subjLow} borrowed money from a classmate.`,
-        d2: (s) => `First, we checked all the spending honestly and paid the classmate back the very next day.`,
-        d3: (s) => `The reason was mixing meal money with fun money. Without keeping notes, it was easy to buy things too fast.`,
-        d4: (s) => `Next, ${s.subjLow} will keep lunch money in a separate bag, wait 24 hours before buying fun things, and pay back the extra cost step by step.`,
-        d5: (s) => `Finally, we made a money rule: write down weekly spending, never borrow big money from friends, and talk to parents when needing help.`
-      },
-      vocab: [
-        ['spend (spent)', 'v.', '花費'],
-        ['borrow', 'v.', '借入'],
-        ['pay back', 'phr.', '還錢'],
-        ['separate', 'adj.', '分開的'],
-        ['cost', 'n.', '費用'],
-        ['weekly', 'adj.', '每週的'],
-        ['honestly', 'adv.', '誠實地']
-      ]
+      levels: {
+        A1: {
+          text: (s, t) => `${t}, ${s.subj} used lunch money to buy game cards and had no money for food. ${s.Subj} asked a friend for money. First, we counted the money and gave it back to the friend the next day. Meal money and play money were in the same bag. Next, ${s.subjLow} will keep lunch money in a separate bag and wait one day before buying games. Our money rule: write down spending each week and ask parents when short on money.`,
+          vocab: [['lunch', 'n.', '午餐'], ['buy', 'v.', '買'], ['count', 'v.', '計算'], ['bag', 'n.', '袋子'], ['wait', 'v.', '等待'], ['week', 'n.', '星期']]
+        },
+        A2: {
+          text: (s, t) => `${t}, ${s.subj} spent lunch money on game cards at a store, so there was no money left for food and ${s.subjLow} borrowed money from a classmate. First, we checked all the spending honestly and paid the classmate back the very next day. The reason was mixing meal money with fun money. Without keeping notes, it was easy to buy things too fast. Next, ${s.subjLow} will keep lunch money in a separate bag, wait 24 hours before buying fun things, and pay back the extra cost step by step. Finally, we made a money rule: write down weekly spending, never borrow big money from friends, and talk to parents when needing help.`,
+          vocab: [['spend (spent)', 'v.', '花費'], ['borrow', 'v.', '借入'], ['pay back', 'phr.', '還錢'], ['separate', 'adj.', '分開的'], ['cost', 'n.', '費用'], ['weekly', 'adj.', '每週的'], ['honestly', 'adv.', '誠實地']]
+        },
+        B1: {
+          text: (s, t) => `${t}, ${s.subj} secretly used ${s.poss} monthly meal allowance to purchase game credit at a convenience store, eventually running out of lunch funds and borrowing cash from a classmate. Immediately, we reviewed every expense honestly and repaid the classmate the following day with family support. The main problem was combining meal and entertainment budgets without tracking spending, leaving no buffer against limited-time game offers. Going forward, ${s.subjLow} will separate food and leisure envelopes, follow a 24-hour cooling-off rule for purchases over 300 dollars, and repay the overspent amount in installments. Together, we set a budget rule: log weekly balances every Sunday and consult family rather than borrowing privately.`,
+          vocab: [['allowance', 'n.', '零用錢'], ['purchase', 'v./n.', '購買'], ['expense', 'n.', '開銷'], ['budget', 'n.', '預算'], ['entertainment', 'n.', '娛樂'], ['installment', 'n.', '分期款'], ['consult', 'v.', '商量／諮詢']]
+        },
+        B2: {
+          text: (s, t) => `${t}, ${s.subj} diverted ${s.poss} meal stipend toward in-game top-up cards, depleting essential lunch funds and resorting to an informal loan from a peer. To resolve the shortfall responsibly, we conducted a transparent audit of all outlays and settled the peer debt the next day. At the core, commingling essential and discretionary funds without bookkeeping left ${s.obj} vulnerable to time-limited digital temptations. To build financial discipline, ${s.subjLow} will adopt envelope budgeting, enforce a 24-hour deliberation period on non-essential buys over 300 dollars, and reimburse the deficit incrementally. Ultimately, we instituted a Sunday ledger review and a firm pledge to seek family guidance rather than private borrowing.`,
+          vocab: [['divert', 'v.', '挪用'], ['deplete', 'v.', '耗盡'], ['shortfall', 'n.', '資金缺口'], ['discretionary', 'adj.', '可自由支配的'], ['vulnerable', 'adj.', '易受誘惑的'], ['deliberation', 'n.', '審慎思考'], ['deficit', 'n.', '透支／赤字']]
+        }
+      }
     },
     peer_social: {
-      id: 'peer_social', label: '同儕社群與手足', enLabel: 'talking kindly with friends',
+      id: 'peer_social', label: '同儕社群與手足',
+      enLabel: { A1: 'fighting with friends', A2: 'talking kindly with friends', B1: 'peer communication online', B2: 'digital conflict resolution' },
       kw: /(群組|LINE|限動|截圖|酸|排擠|分組報告|同學吵架|口角|打架|推擠|搶|遙控器|電視|手足|吵架|說壞話|公審|霸凌|翻臉)/g,
       title: a => `${a}同儕群組與理性溝通`,
       when: '課餘互動時段', where: '班級群組與學校', item: '群組互動與分工',
@@ -260,25 +305,28 @@
       d3: '因覺得分工不公累積委屈，隔著螢幕衝動想證明自己對，忘了公開酸人只會傷感情。',
       d4: '向對方誠懇道歉並重新列清楚分工表，養成生氣文字先存備忘錄放 10 分鐘的習慣。',
       d5: '訂立人際公約：私下溝通、公開尊重，生氣時絕不立刻按送出也不截圖公審。',
-      en: {
-        d1: (s, t) => `${t}, ${s.subj} argued with a classmate in the class group chat about team work and posted mean words that made everyone uncomfortable.`,
-        d2: (s) => `First, ${s.subjLow} stopped fighting online, deleted the bad message, and moved the talk to a private chat.`,
-        d3: (s) => `The real reason was feeling unfair about the work. Typing behind a screen made it too easy to send angry words without thinking.`,
-        d4: (s) => `Next, ${s.subjLow} will say sorry nicely, make a clear work list with the team, and wait 10 minutes before sending any angry text.`,
-        d5: (s) => `Finally, we agreed on a social rule: talk in private, be kind in public groups, and never post screenshots to hurt others.`
-      },
-      vocab: [
-        ['argue', 'v.', '爭吵'],
-        ['mean', 'adj.', '刻薄的'],
-        ['delete', 'v.', '刪除'],
-        ['private', 'adj.', '私下的'],
-        ['unfair', 'adj.', '不公平的'],
-        ['public', 'adj.', '公開的'],
-        ['hurt', 'v.', '傷害']
-      ]
+      levels: {
+        A1: {
+          text: (s, t) => `${t}, ${s.subj} had a fight with a classmate in the class chat and wrote mean words. First, ${s.subjLow} stopped typing and deleted the bad text. ${s.Subj} felt the team work was not fair and got mad fast. Next, ${s.subjLow} will say sorry, make a clear team plan, and wait 10 minutes before sending an angry text. Our rule: be kind in group chats and talk one-on-one.`,
+          vocab: [['chat', 'n.', '聊天室'], ['write (wrote)', 'v.', '寫'], ['fair', 'adj.', '公平的'], ['mad', 'adj.', '生氣的'], ['plan', 'n.', '計畫'], ['kind', 'adj.', '友善的']]
+        },
+        A2: {
+          text: (s, t) => `${t}, ${s.subj} argued with a classmate in the class group chat about team work and posted mean words that made everyone uncomfortable. First, ${s.subjLow} stopped fighting online, deleted the bad message, and moved the talk to a private chat. The real reason was feeling unfair about the work. Typing behind a screen made it too easy to send angry words without thinking. Next, ${s.subjLow} will say sorry nicely, make a clear work list with the team, and wait 10 minutes before sending any angry text. Finally, we agreed on a social rule: talk in private, be kind in public groups, and never post screenshots to hurt others.`,
+          vocab: [['argue', 'v.', '爭吵'], ['mean', 'adj.', '刻薄的'], ['delete', 'v.', '刪除'], ['private', 'adj.', '私下的'], ['unfair', 'adj.', '不公平的'], ['public', 'adj.', '公開的'], ['hurt', 'v.', '傷害']]
+        },
+        B1: {
+          text: (s, t) => `${t}, ${s.subj} got into a heated dispute with a classmate in the class group chat over unequal group project duties and posted sarcastic screenshots, making the atmosphere awkward. Immediately, ${s.subjLow} halted the online argument, unsent the hurtful messages, and shifted the conversation to private messaging. The underlying trigger was pent-up frustration over workload fairness, amplified by the impulse to prove a point behind a screen. Moving forward, ${s.subjLow} will apologize genuinely, clarify everyone's role in a shared checklist, and draft angry replies in notes for 10 minutes before hitting send. Together, we set a social principle: resolve conflicts privately, stay respectful in public chats, and never shame others with screenshots.`,
+          vocab: [['dispute', 'n.', '爭執'], ['unequal', 'adj.', '不均的'], ['sarcastic', 'adj.', '諷刺的'], ['awkward', 'adj.', '尷尬的'], ['clarify', 'v.', '釐清'], ['principle', 'n.', '原則'], ['respectful', 'adj.', '尊重的']]
+        },
+        B2: {
+          text: (s, t) => `${t}, ${s.subj} clashed with a peer in the class messaging group over perceived inequities in a team assignment, impulsively posting mocking screenshots that soured the classroom climate. To contain the fallout, ${s.subjLow} ceased replying publicly, retracted the offending remarks, and transitioned to a calm one-on-one exchange. At its core, unspoken resentment combined with screen-mediated impulsivity obscured how damaging public ridicule can be. Going forward, ${s.subjLow} will offer a candid apology, co-author an explicit division of labor, and impose a 10-minute draft buffer whenever agitated. Ultimately, we upheld a clear digital ethic: address grievances privately, uphold dignity in public forums, and never weaponize screenshots.`,
+          vocab: [['inequity', 'n.', '不公平'], ['retract', 'v.', '收回／撤回'], ['resentment', 'n.', '怨懟委屈'], ['ridicule', 'n.', '嘲諷'], ['agitated', 'adj.', '激動煩躁的'], ['grievance', 'n.', '不滿／委屈'], ['dignity', 'n.', '尊嚴']]
+        }
+      }
     },
     boundary_item: {
-      id: 'boundary_item', label: '物品與隱私界限', enLabel: 'respecting personal things',
+      id: 'boundary_item', label: '物品與隱私界限',
+      enLabel: { A1: 'taking personal things', A2: 'respecting personal things', B1: 'personal boundaries', B2: 'respecting privacy and property' },
       kw: /(擅自|沒問過|未經同意|沒經過同意|偷拿|偷看|翻看|日記|耳機|藍牙耳機|玩偶|彩色筆|文具|筆記本|化妝品|球鞋|模型|卡牌|弄壞|摔裂|摔壞|弄丟|隱私|私人物品)/g,
       title: a => `${a}尊重物品與隱私界限`,
       when: '昨天出門前', where: '家人房間與學校', item: '他人私人物品',
@@ -287,25 +335,28 @@
       d3: '圖一時方便又怕被拒絕，抱持熟人借一下沒關係的僥倖心態，忽略他人安全感。',
       d4: '正式道歉不找藉口，以零用錢或家務存錢賠償維修費，落實進房先敲門、借物先問過。',
       d5: '訂立界限公約：全家人互相尊重私人空間與物品，對方有權說不，損壞一定負責。',
-      en: {
-        d1: (s, t) => `${t}, ${s.subj} took a family member's earphones without asking and accidentally broke the case at school.`,
-        d2: (s) => `First, ${s.subjLow} gave the item back right away, told the truth about the damage, and listened to the owner's feelings.`,
-        d3: (s) => `The reason was wanting a quick favor and feeling afraid of hearing "no." ${s.Subj} forgot that personal things need respect.`,
-        d4: (s) => `Next, ${s.subjLow} will say sorry clearly, use pocket money to help fix or buy a new one, and always knock before entering a room.`,
-        d5: (s) => `Finally, we made a respect rule: always ask first before borrowing anything, and accept "no" politely.`
-      },
-      vocab: [
-        ['without asking', 'phr.', '沒先詢問'],
-        ['accidentally', 'adv.', '不小心'],
-        ['break (broke)', 'v.', '弄壞'],
-        ['truth', 'n.', '實話'],
-        ['respect', 'n./v.', '尊重'],
-        ['pocket money', 'n.', '零用錢'],
-        ['politely', 'adv.', '有禮貌地']
-      ]
+      levels: {
+        A1: {
+          text: (s, t) => `${t}, ${s.subj} took a family member's earphones without asking and broke the box at school. First, ${s.subjLow} gave them back right away and told the truth. ${s.Subj} wanted to borrow them fast and felt afraid to ask. Next, ${s.subjLow} will say sorry, pay to fix the box, and knock on doors first. Our home rule: always ask before taking someone's things.`,
+          vocab: [['take (took)', 'v.', '拿取'], ['ask', 'v.', '詢問'], ['box', 'n.', '盒子'], ['fix', 'v.', '修理'], ['knock', 'v.', '敲門'], ['things', 'n.', '物品']]
+        },
+        A2: {
+          text: (s, t) => `${t}, ${s.subj} took a family member's earphones without asking and accidentally broke the case at school. First, ${s.subjLow} gave the item back right away, told the truth about the damage, and listened to the owner's feelings. The reason was wanting a quick favor and feeling afraid of hearing "no." ${s.Subj} forgot that personal things need respect. Next, ${s.subjLow} will say sorry clearly, use pocket money to help fix or buy a new one, and always knock before entering a room. Finally, we made a respect rule: always ask first before borrowing anything, and accept "no" politely.`,
+          vocab: [['without asking', 'phr.', '沒先詢問'], ['accidentally', 'adv.', '不小心'], ['break (broke)', 'v.', '弄壞'], ['truth', 'n.', '實話'], ['respect', 'n./v.', '尊重'], ['pocket money', 'n.', '零用錢'], ['politely', 'adv.', '有禮貌地']]
+        },
+        B1: {
+          text: (s, t) => `${t}, ${s.subj} entered a family member's room without permission, took ${s.poss} relative's wireless earphones to school, and cracked the charging case by accident. Immediately, ${s.subjLow} returned the earphones with both hands, explained the damage honestly, and gave the owner space to share ${s.poss} frustration. The real cause was chasing convenience while fearing refusal, overlooking how deeply uninvited entry hurts someone's sense of privacy. Going forward, ${s.subjLow} will apologize without excuses, cover the repair cost through allowance or chores, and always knock before entering. Together, we set a boundary rule: respect personal space and belongings, accept "no" gracefully, and take full responsibility for damage.`,
+          vocab: [['permission', 'n.', '同意／許可'], ['crack', 'v.', '摔裂'], ['convenience', 'n.', '方便'], ['privacy', 'n.', '隱私'], ['excuse', 'n.', '藉口'], ['belongings', 'n.', '私人物品'], ['responsibility', 'n.', '責任']]
+        },
+        B2: {
+          text: (s, t) => `${t}, ${s.subj} entered a sibling's room uninvited, borrowed wireless earphones without consent, and inadvertently fractured the charging case at school. To address the breach immediately, ${s.subjLow} returned the item respectfully, disclosed the damage candidly, and acknowledged the owner's hurt feelings. Underlying the misstep was a casual assumption that family closeness excused skipping consent, disregarding personal security. As restitution, ${s.subjLow} will deliver an unconditional apology, finance the repair via allowance or extra chores, and strictly observe door-knocking etiquette. Ultimately, the household affirmed a mutual boundary compact: personal space and possessions are inviolable, refusal must be honored, and accountability is mandatory.`,
+          vocab: [['consent', 'n.', '同意'], ['inadvertently', 'adv.', '不慎／無意中'], ['breach', 'n.', '侵犯／違反'], ['disclose', 'v.', '如實說明'], ['restitution', 'n.', '賠償修復'], ['unconditional', 'adj.', '無條件的'], ['accountability', 'n.', '負責／課責']]
+        }
+      }
     },
     chore_self: {
-      id: 'chore_self', label: '家務與生活自理', enLabel: 'home chores and tidying up',
+      id: 'chore_self', label: '家務與生活自理',
+      enLabel: { A1: 'home chores', A2: 'home chores and tidying up', B1: 'daily chores and organization', B2: 'household accountability' },
       kw: /(倒垃圾|垃圾車|廚餘|洗碗|水槽|發臭|做家事|家務|打掃|整理房間|書桌|雜物|臭襪子|洗衣籃|長螞蟻|發霉|值日生|髒亂)/g,
       title: a => `${a}家務責任與生活自理`,
       when: '這週晚間家務時段', where: '家中廚房與書桌', item: '負責家務與整潔',
@@ -314,25 +365,28 @@
       d3: '放學只想先追劇放鬆，抱持「等一下再做」拖延心態，且未設固定鬧鐘提醒。',
       d4: '設手機定時鬧鐘先做 10 分鐘家務再休息，睡前執行 3 分鐘桌面清零，忙時提前換班。',
       d5: '訂立分工公約：自己設鬧鐘完成分內家務、不拖過隔夜，大人也不反覆碎念催促。',
-      en: {
-        d1: (s, t) => `${t}, ${s.subj} kept watching videos after school and forgot to wash the dishes and clean the desk for two days.`,
-        d2: (s) => `First, ${s.subjLow} put the screen away, spent 15 minutes cleaning the sink and desk right away, and thanked the family.`,
-        d3: (s) => `The reason was waiting until "later." Without a set alarm, it was easy to forget chores while relaxing.`,
-        d4: (s) => `Next, ${s.subjLow} will set a phone alarm to finish chores before playing, and spend 3 minutes tidying the desk every night.`,
-        d5: (s) => `Finally, we made a home rule: finish daily chores before bed without reminders, and ask to trade turns early during exam weeks.`
-      },
-      vocab: [
-        ['wash the dishes', 'phr.', '洗碗'],
-        ['clean', 'v./adj.', '清理／乾淨的'],
-        ['forget (forgot)', 'v.', '忘記'],
-        ['chore', 'n.', '家務'],
-        ['tidy', 'v.', '整理'],
-        ['daily', 'adj.', '每日的'],
-        ['trade turns', 'phr.', '輪流換班']
-      ]
+      levels: {
+        A1: {
+          text: (s, t) => `${t}, ${s.subj} watched videos after school and did not wash the dishes or clean the desk for two days. First, ${s.subjLow} stopped watching, washed the dishes, and cleaned the desk for 15 minutes. ${s.Subj} wanted to rest first and forgot without a clock. Next, ${s.subjLow} will set an alarm to do chores first and clean the desk for 3 minutes every night. Our home rule: finish daily chores before bed.`,
+          vocab: [['dishes', 'n.', '碗盤'], ['desk', 'n.', '書桌'], ['rest', 'v.', '休息'], ['alarm', 'n.', '鬧鐘'], ['finish', 'v.', '完成'], ['night', 'n.', '晚上']]
+        },
+        A2: {
+          text: (s, t) => `${t}, ${s.subj} kept watching videos after school and forgot to wash the dishes and clean the desk for two days. First, ${s.subjLow} put the screen away, spent 15 minutes cleaning the sink and desk right away, and thanked the family. The reason was waiting until "later." Without a set alarm, it was easy to forget chores while relaxing. Next, ${s.subjLow} will set a phone alarm to finish chores before playing, and spend 3 minutes tidying the desk every night. Finally, we made a home rule: finish daily chores before bed without reminders, and ask to trade turns early during exam weeks.`,
+          vocab: [['wash the dishes', 'phr.', '洗碗'], ['clean', 'v./adj.', '清理／乾淨的'], ['forget (forgot)', 'v.', '忘記'], ['chore', 'n.', '家務'], ['tidy', 'v.', '整理'], ['daily', 'adj.', '每日的'], ['trade turns', 'phr.', '輪流換班']]
+        },
+        B1: {
+          text: (s, t) => `${t}, ${s.subj} became absorbed in shows and games after school, leaving dirty dishes in the sink for two days and letting clutter bury ${s.poss} study desk. Right away, ${s.subjLow} stepped away from screens for 15 minutes to scrub the dishes, clear the desk, and thank family members who had helped. The root cause was a "do it later" mindset without any scheduled reminder to prompt action. Going forward, ${s.subjLow} will use a daily phone alarm to complete 10 minutes of chores before relaxing, do a 3-minute desk reset before bed, and swap shifts in advance during busy weeks. Together, we set a household routine: manage assigned chores independently overnight-free, while adults avoid constant nagging.`,
+          vocab: [['clutter', 'n.', '雜物'], ['scrub', 'v.', '刷洗'], ['mindset', 'n.', '心態'], ['scheduled', 'adj.', '定時的'], ['swap', 'v.', '交換／換班'], ['independently', 'adv.', '獨立自主地'], ['nagging', 'n.', '反覆碎念']]
+        },
+        B2: {
+          text: (s, t) => `${t}, ${s.subj} prioritized post-school screen entertainment over assigned duties, leaving unwashed dishes to stagnate in the sink and desk clutter to obscure important study sheets. To rectify the lapse immediately, ${s.subjLow} put devices aside for 15 minutes to restore the kitchen and workspace, expressing gratitude to family members who had stepped in. Underlying the neglect was habitual postponement coupled with the absence of an external cue once relaxation began. To sustain self-reliance, ${s.subjLow} will trigger a fixed alarm to complete 10 minutes of chores prior to leisure, conduct a 3-minute nightly desk reset, and negotiate shift swaps proactively before exams. Ultimately, we forged a balanced compact: self-monitored chore completion before bedtime in exchange for nag-free trust.`,
+          vocab: [['rectify', 'v.', '補救糾正'], ['restore', 'v.', '恢復整潔'], ['neglect', 'n.', '疏忽'], ['postponement', 'n.', '拖延'], ['self-reliance', 'n.', '生活自理'], ['negotiate', 'v.', '協商'], ['compact', 'n.', '公約／協定']]
+        }
+      }
     },
     safety_health: {
-      id: 'safety_health', label: '交通安全與健康', enLabel: 'road safety',
+      id: 'safety_health', label: '交通安全與健康',
+      enLabel: { A1: 'road safety', A2: 'road safety', B1: 'commuting safety', B2: 'traffic safety habits' },
       kw: /(安全帽|腳踏車|單車|電動自行車|微電車|機車|闖紅燈|闖黃燈|搶快|過馬路|擦撞|摔車|導護|走廊奔跑|實驗室|手搖飲|不吃正餐|受傷|發燒|淋雨|雨衣)/g,
       title: a => `${a}通學交通安全與防護`,
       when: '今天早上上學途中', where: '通學路口與馬路', item: '安全帽與交通規則',
@@ -341,27 +395,30 @@
       d3: '早上出門太趕怕遲到，心存「路很短不會出事」僥倖心態，把安全換成幾十秒方便。',
       d4: '每天提早 10 分鐘從容出門，安全帽放車上做到不戴不上路，路口確實停看聽。',
       d5: '訂立安全公約：安全永遠大於趕時間，寧可遲到報備，絕不沒戴安全帽或搶黃紅燈。',
-      en: {
-        d1: (s, t) => `${t}, ${s.subj} rode an e-bike to school without a helmet and tried to beat a yellow light until a teacher stopped ${s.obj}.`,
-        d2: (s) => `First, ${s.subjLow} stopped safely, thanked the teacher for the warning, and put the helmet right by the front door.`,
-        d3: (s) => `The reason was rushing for school. ${s.Subj} thought the trip was short and forgot that one mistake on the road can be very dangerous.`,
-        d4: (s) => `Next, ${s.subjLow} will leave home 10 minutes earlier every morning, always wear the helmet, and slow down at every corner.`,
-        d5: (s) => `Finally, we agreed on a safety rule: being safe is always more important than being fast. Never run a yellow or red light.`
-      },
-      vocab: [
-        ['helmet', 'n.', '安全帽'],
-        ['yellow light', 'n.', '黃燈'],
-        ['warning', 'n.', '提醒／警告'],
-        ['rush', 'v.', '趕時間／匆忙'],
-        ['dangerous', 'adj.', '危險的'],
-        ['slow down', 'phr.', '減速'],
-        ['important', 'adj.', '重要的']
-      ]
+      levels: {
+        A1: {
+          text: (s, t) => `${t}, ${s.subj} rode an e-bike to school with no helmet and went fast at a yellow light. A teacher stopped ${s.obj}. First, ${s.subjLow} stopped safely, thanked the teacher, and put the helmet by the door. ${s.Subj} left home late and thought the road was short. Next, ${s.subjLow} will leave 10 minutes early and always wear the helmet. Our safety rule: being safe comes before being fast.`,
+          vocab: [['ride (rode)', 'v.', '騎乘'], ['helmet', 'n.', '安全帽'], ['fast', 'adv.', '快速地'], ['light', 'n.', '號誌燈'], ['early', 'adv.', '提早'], ['wear', 'v.', '配戴']]
+        },
+        A2: {
+          text: (s, t) => `${t}, ${s.subj} rode an e-bike to school without a helmet and tried to beat a yellow light until a teacher stopped ${s.obj}. First, ${s.subjLow} stopped safely, thanked the teacher for the warning, and put the helmet right by the front door. The reason was rushing for school. ${s.Subj} thought the trip was short and forgot that one mistake on the road can be very dangerous. Next, ${s.subjLow} will leave home 10 minutes earlier every morning, always wear the helmet, and slow down at every corner. Finally, we agreed on a safety rule: being safe is always more important than being fast. Never run a yellow or red light.`,
+          vocab: [['helmet', 'n.', '安全帽'], ['yellow light', 'n.', '黃燈'], ['warning', 'n.', '提醒／警告'], ['rush', 'v.', '趕時間／匆忙'], ['dangerous', 'adj.', '危險的'], ['slow down', 'phr.', '減速'], ['important', 'adj.', '重要的']]
+        },
+        B1: {
+          text: (s, t) => `${t}, ${s.subj} commuted to school on an e-bike without wearing a helmet and attempted to rush through a yellow light, nearly colliding with a turning scooter before a crossing guard teacher intervened. Immediately, ${s.subjLow} pulled over safely, thanked the teacher for the reminder, and placed the helmet in a fixed spot by the front door. The core reason was leaving too late and falling into the false belief that a short ride carries no real danger. Moving forward, ${s.subjLow} will depart 10 minutes earlier each morning, keep the helmet on the bike so it is never forgotten, and pause carefully at every intersection. Together, we set a strict safety standard: personal safety always outweighs saving a few seconds.`,
+          vocab: [['commute', 'v.', '通勤'], ['collide', 'v.', '擦撞／碰撞'], ['pull over', 'phr.', '靠邊停車'], ['depart', 'v.', '出發'], ['intersection', 'n.', '十字路口'], ['strict', 'adj.', '嚴格的'], ['outweigh', 'v.', '比……更重要']]
+        },
+        B2: {
+          text: (s, t) => `${t}, ${s.subj} rode an e-bike to school unhelmeted and tried to beat an amber signal, narrowly avoiding a collision with a turning scooter until a duty teacher intervened. Immediately, ${s.subjLow} came to a controlled stop, expressed gratitude for the intervention, and established a visible storage spot for the helmet at the entryway. Fundamentally, morning haste fostered complacency—trading vital protection for mere seconds on a familiar route. To eliminate this hazard, ${s.subjLow} will build in a 10-minute morning buffer, enforce a strict "no helmet, no ride" habit, and practice defensive scanning at every junction. Ultimately, we enshrined a non-negotiable safety principle: arriving intact always supersedes punctuality, with zero tolerance for running signals.`,
+          vocab: [['narrowly', 'adv.', '差一點／驚險地'], ['collision', 'n.', '碰撞事故'], ['complacency', 'n.', '僥倖大意'], ['hazard', 'n.', '危險隱患'], ['defensive', 'adj.', '防禦性的'], ['supersede', 'v.', '優先於／取代'], ['non-negotiable', 'adj.', '絕不妥協的']]
+        }
+      }
     }
   };
 
   /* -------------------- 狀態管理 -------------------- */
   let activeTone = 'gentle_family';
+  let activeCefr = 'A2';
   let activeRTab = 'article';
   let activeMobTab = 'draft';
   let isDemoing = false;
@@ -370,9 +427,10 @@
   function blankData() {
     const td = todayStr();
     return {
-      reportId: `5D-A2-${td.replace(/-/g, '')}-${Math.floor(Math.random() * 900 + 100)}`,
+      reportId: `SAY-${td.replace(/-/g, '')}-${Math.floor(Math.random() * 900 + 100)}`,
       rawInput: '',
       tone: activeTone,
+      cefrLevel: activeCefr,
       primaryDomain: '',
       secondaryDomain: '',
       title: '',
@@ -382,7 +440,7 @@
       targetCloseDate: addDays(td, 7),
       articleZh: '',
       articleEn: '',
-      a2Vocab: [],
+      enVocab: [],
       refinements: [],
       d1: { problemDesc: '', who: '', when: '', where: '', why: '', how: '', impactScope: '' },
       d2: '', d3: '', d4: '', d5: '',
@@ -435,20 +493,20 @@
 
   function getEnglishSubject(actor, tone) {
     if (tone === 'teen_growth' || actor === '我') {
-      return { subj: 'I', subjLow: 'I', Subj: 'I', obj: 'me', we: 'my family and I' };
+      return { subj: 'I', subjLow: 'I', Subj: 'I', obj: 'me', poss: 'my', we: 'my family and I' };
     }
     const map = {
-      '弟弟': { subj: 'my younger brother', subjLow: 'he', Subj: 'He', obj: 'him', we: 'we' },
-      '哥哥': { subj: 'my older brother', subjLow: 'he', Subj: 'He', obj: 'him', we: 'we' },
-      '姊姊': { subj: 'my older sister', subjLow: 'she', Subj: 'She', obj: 'her', we: 'we' },
-      '姐姐': { subj: 'my older sister', subjLow: 'she', Subj: 'She', obj: 'her', we: 'we' },
-      '妹妹': { subj: 'my younger sister', subjLow: 'she', Subj: 'She', obj: 'her', we: 'we' }
+      '弟弟': { subj: 'my younger brother', subjLow: 'he', Subj: 'He', obj: 'him', poss: 'his', we: 'we' },
+      '哥哥': { subj: 'my older brother', subjLow: 'he', Subj: 'He', obj: 'him', poss: 'his', we: 'we' },
+      '姊姊': { subj: 'my older sister', subjLow: 'she', Subj: 'She', obj: 'her', poss: 'her', we: 'we' },
+      '姐姐': { subj: 'my older sister', subjLow: 'she', Subj: 'She', obj: 'her', poss: 'her', we: 'we' },
+      '妹妹': { subj: 'my younger sister', subjLow: 'she', Subj: 'She', obj: 'her', poss: 'her', we: 'we' }
     };
     if (map[actor]) return map[actor];
     if (tone === 'teacher_record') {
-      return { subj: 'the student', subjLow: 'the student', Subj: 'The student', obj: 'the student', we: 'we' };
+      return { subj: 'the student', subjLow: 'the student', Subj: 'The student', obj: 'the student', poss: 'their', we: 'we' };
     }
-    return { subj: 'the teenager', subjLow: 'he or she', Subj: 'He or she', obj: 'them', we: 'we' };
+    return { subj: 'the teenager', subjLow: 'he or she', Subj: 'He or she', obj: 'them', poss: 'their', we: 'we' };
   }
 
   function detectDomains(text) {
@@ -493,44 +551,116 @@
     return article;
   }
 
-  function translateRefinementA2(text) {
-    if (/(道歉|對不起)/.test(text)) return 'Also, saying sorry nicely helped everyone feel much better.';
-    if (/(段考|考試|壓力)/.test(text)) return 'The big test pressure made it even harder to stay relaxed.';
-    if (/(11點|十一點|客廳|充電|約定|公約)/.test(text)) return 'We clearly agreed to put the phone in the living room before 11 p.m. on school nights.';
-    if (/(洗碗|倒垃圾|家事|補償)/.test(text)) return 'To show responsibility, helping with dishes and trash this week is part of the plan.';
-    if (/(提早|10分鐘)/.test(text)) return 'Getting up 10 minutes earlier will also keep mornings calm.';
-    return 'We talked openly about this extra detail and added it to our plan.';
+  function translateRefinementByLevel(text, level = 'A2') {
+    const lvl = CEFR_META[level] ? level : 'A2';
+    if (/(道歉|對不起)/.test(text)) {
+      return {
+        A1: 'Later, saying sorry made everyone feel good.',
+        A2: 'Also, saying sorry nicely helped everyone feel much better.',
+        B1: 'In addition, offering a genuine apology afterward helped ease the tension.',
+        B2: 'Moreover, a candid apology afterward meaningfully restored mutual goodwill.'
+      }[lvl];
+    }
+    if (/(段考|考試|壓力)/.test(text)) {
+      return {
+        A1: 'The big test made it hard to feel calm.',
+        A2: 'The big test pressure made it even harder to stay relaxed.',
+        B1: 'Recent exam stress also made it harder to stay patient and balanced.',
+        B2: 'Compounding this, mounting exam pressure significantly strained emotional resilience.'
+      }[lvl];
+    }
+    if (/(11點|十一點|客廳|充電|約定|公約)/.test(text)) {
+      return {
+        A1: 'We agreed to put the phone in the living room at 11 p.m.',
+        A2: 'We clearly agreed to put the phone in the living room before 11 p.m. on school nights.',
+        B1: 'We specifically agreed to leave the phone charging in the living room by 11 p.m. on weeknights.',
+        B2: 'We formally committed to docking the phone in the living room by 11 p.m. on school nights.'
+      }[lvl];
+    }
+    if (/(洗碗|倒垃圾|家事|補償)/.test(text)) {
+      return {
+        A1: 'Helping with dishes and trash this week is part of the plan.',
+        A2: 'To show responsibility, helping with dishes and trash this week is part of the plan.',
+        B1: 'To make amends, taking initiative on washing dishes and taking out the trash is included this week.',
+        B2: 'As tangible restitution, proactively handling dishes and waste disposal this week anchors the plan.'
+      }[lvl];
+    }
+    if (/(提早|10分鐘)/.test(text)) {
+      return {
+        A1: 'Getting up 10 minutes early will also help.',
+        A2: 'Getting up 10 minutes earlier will also keep mornings calm.',
+        B1: 'Waking up 10 minutes earlier will also create a smoother morning routine.',
+        B2: 'Building in a 10-minute morning buffer will likewise prevent avoidable haste.'
+      }[lvl];
+    }
+    return {
+      A1: 'We also talked about this and added it to our plan.',
+      A2: 'We talked openly about this extra detail and added it to our plan.',
+      B1: 'We discussed this additional point openly and incorporated it into our agreement.',
+      B2: 'We candidly addressed this supplementary detail and integrated it into our resolution.'
+    }[lvl];
   }
 
-  function composeA2English(d, actorInfo) {
+  function composeEnglish(d, actorInfo, level = d.cefrLevel || activeCefr) {
+    const lvl = CEFR_META[level] ? level : 'A2';
     const dom1 = KB[d.primaryDomain] || KB['3c_sleep'];
     const dom2 = d.secondaryDomain ? KB[d.secondaryDomain] : null;
     const s = getEnglishSubject(actorInfo.actor, d.tone);
     const t = actorInfo.timeEn || 'Recently';
+    const pack1 = dom1.levels[lvl] || dom1.levels.A2;
 
-    const parts = [
-      dom1.en.d1(s, t),
-      dom2 ? `At the same time, ${dom2.id === 'emotion_comm' ? `${s.subjLow} also got angry and closed the door hard.` : `this also caused a problem with ${dom2.enLabel}.`}` : '',
-      dom1.en.d2(s),
-      dom1.en.d3(s),
-      dom1.en.d4(s),
-      dom1.en.d5(s),
-      ...(d.refinements || []).map(translateRefinementA2)
-    ].filter(Boolean);
+    let secondarySentence = '';
+    if (dom2) {
+      if (dom2.id === 'emotion_comm') {
+        secondarySentence = {
+          A1: `${s.Subj} also got mad and shut the door hard.`,
+          A2: `At the same time, ${s.subjLow} also got angry and closed the door hard.`,
+          B1: `At the same time, ${s.subjLow} lost ${s.poss} temper and slammed the door.`,
+          B2: `Compounding the situation, ${s.subjLow} reacted defensively and slammed the door.`
+        }[lvl];
+      } else {
+        const lbl = dom2.enLabel[lvl] || dom2.enLabel.A2;
+        secondarySentence = {
+          A1: `This also made a problem with ${lbl}.`,
+          A2: `At the same time, this also caused a problem with ${lbl}.`,
+          B1: `Meanwhile, this also led to difficulties with ${lbl}.`,
+          B2: `Simultaneously, this spilled over into ${lbl}.`
+        }[lvl];
+      }
+    }
+
+    const baseText = pack1.text(s, t);
+    // 將關聯領域句子自然插在第一句之後
+    let combined = baseText;
+    if (secondarySentence) {
+      const firstPeriod = baseText.indexOf('. ');
+      if (firstPeriod !== -1) {
+        combined = `${baseText.slice(0, firstPeriod + 1)} ${secondarySentence}${baseText.slice(firstPeriod + 1)}`;
+      } else {
+        combined = `${baseText} ${secondarySentence}`;
+      }
+    }
+
+    const extra = (d.refinements || []).map(r => translateRefinementByLevel(r, lvl));
+    const fullText = [combined, ...extra].filter(Boolean).join(' ');
 
     const vocabMap = new Map();
-    dom1.vocab.forEach(v => vocabMap.set(v[0], v));
-    if (dom2) dom2.vocab.slice(0, 2).forEach(v => vocabMap.set(v[0], v));
+    pack1.vocab.forEach(v => vocabMap.set(v[0], v));
+    if (dom2 && dom2.levels[lvl]) {
+      dom2.levels[lvl].vocab.slice(0, 2).forEach(v => vocabMap.set(v[0], v));
+    }
 
     return {
-      en: parts.join(' '),
+      level: lvl,
+      en: fullText,
       vocab: Array.from(vocabMap.values()).slice(0, 8)
     };
   }
 
-  function buildFromPlainText(rawText, tone = activeTone) {
+  function buildFromPlainText(rawText, tone = activeTone, cefr = activeCefr) {
     const clean = String(rawText || '').trim();
     if (!clean) return null;
+    const lvl = CEFR_META[cefr] ? cefr : 'A2';
     const actorInfo = extractActorAndTime(clean);
     const { primary, secondary } = detectDomains(clean);
     const d1 = KB[primary];
@@ -540,6 +670,7 @@
     const out = blankData();
     out.rawInput = clean;
     out.tone = tone;
+    out.cefrLevel = lvl;
     out.primaryDomain = primary;
     out.secondaryDomain = secondary;
     out.title = d2 ? `${d1.title(actor)}（併同${d2.label}）` : d1.title(actor);
@@ -568,22 +699,22 @@
     out.d5 = d1.d5;
 
     out.articleZh = composeZhArticle(out);
-    const enPack = composeA2English(out, actorInfo);
+    const enPack = composeEnglish(out, actorInfo, lvl);
     out.articleEn = enPack.en;
-    out.a2Vocab = enPack.vocab;
+    out.enVocab = enPack.vocab;
     return out;
   }
 
   function applySpokenRefinement(sentence) {
     const s = String(sentence || '').trim();
     if (!s) return null;
-    let label = '中英短文與 5D 結構';
+    let label = '中英短文與對話結構';
     if (/(約定|公約|家規|11點|客廳)/.test(s)) {
       data.d5 = s;
-      label = 'D5 生活公約與中英短文';
+      label = 'D5 共同約定與中英短文';
     } else if (/(因為|原因|壓力|段考)/.test(s)) {
       data.d3 = `${s}，${data.d3}`;
-      label = 'D3 真正原因與中英短文';
+      label = 'D3 背後原因與中英短文';
     } else if (/(補償|洗碗|倒垃圾|以後|願意|提早)/.test(s)) {
       data.d4 = `${s}，並${data.d4}`;
       label = 'D4 改善補償與中英短文';
@@ -596,15 +727,29 @@
 
     data.refinements = [...(data.refinements || []).slice(-2), s];
     data.articleZh = composeZhArticle(data);
-    const enPack = composeA2English(data, extractActorAndTime(data.rawInput || data.d1.problemDesc));
+    const enPack = composeEnglish(data, extractActorAndTime(data.rawInput || data.d1.problemDesc), activeCefr);
+    data.cefrLevel = enPack.level;
     data.articleEn = enPack.en;
-    data.a2Vocab = enPack.vocab;
+    data.enVocab = enPack.vocab;
 
     if (typeof document !== 'undefined') {
       if (isMobileView()) switchMobileTab('draft');
       switchRightTab('article', true);
     }
-    return { label, zhLen: countZh(data.articleZh) };
+    return { label, zhLen: countZh(data.articleZh), cefrLevel: enPack.level };
+  }
+
+  function applyCefrSwitch(newLevel) {
+    if (!CEFR_META[newLevel]) return;
+    activeCefr = newLevel;
+    data.cefrLevel = newLevel;
+    if (data.rawInput || data.d1.problemDesc) {
+      const enPack = composeEnglish(data, extractActorAndTime(data.rawInput || data.d1.problemDesc), newLevel);
+      data.articleEn = enPack.en;
+      data.enVocab = enPack.vocab;
+    }
+    refreshAllViews(true);
+    showToast(`已切換英文難度：${CEFR_META[newLevel].title}`, 'success');
   }
 
   /* -------------------- 雙軌外部 AI（Gemini / Ollama） -------------------- */
@@ -615,19 +760,19 @@
     const provider = document.getElementById('llm-provider').value;
     const btn = document.getElementById('btn-generate');
     btn.disabled = true;
-    btn.textContent = '整理短文與 A2 翻譯中...';
+    btn.textContent = `整理短文與 ${activeCefr} 翻譯中...`;
     try {
       if (provider === 'offline') {
-        data = buildFromPlainText(txt, activeTone);
+        data = buildFromPlainText(txt, activeTone, activeCefr);
         if (isMobileView()) switchMobileTab('draft');
         switchRightTab('article', true);
-        showToast(`已整理成 ${countZh(data.articleZh)} 字完整短文與國中 A2 英文！`, 'success');
+        showToast(`已整理成 ${countZh(data.articleZh)} 字短文與 ${CEFR_META[activeCefr].title} 翻譯！`, 'success');
       } else {
         await callExternalAi(provider, txt);
       }
     } finally {
       btn.disabled = false;
-      btn.textContent = '幫我整理成 300字短文 ＋ A2 英文';
+      btn.textContent = '幫我整理成 300字短文 ＋ 英文翻譯';
     }
   }
 
@@ -635,18 +780,19 @@
     const apiKey = document.getElementById('llm-api-key').value.trim();
     const model = document.getElementById('llm-model-name').value.trim() || (provider === 'ollama' ? 'qwen2.5' : 'gemini-2.5-flash');
     if (provider === 'gemini' && !apiKey) {
-      data = buildFromPlainText(rawText, activeTone);
+      data = buildFromPlainText(rawText, activeTone, activeCefr);
       if (isMobileView()) switchMobileTab('draft');
       switchRightTab('article', true);
       showToast('未填 API Key，已改由離線雙語引擎生成。', 'warning');
       return;
     }
 
+    const cefrInfo = CEFR_META[activeCefr] || CEFR_META.A2;
     const prompt = `你現在是「如果跟我這樣說.....」雙語對話整理助手。請將以下台灣國高中生口語白話情境，自動補足為完整結構（發生經過、當下處置、真正原因、改善補償、共同約定）的繁體中文短文與英文翻譯。
 嚴格要求：
 1. articleZh：流暢自然的完整結構中文文章，總字數絕對不可超過 300 字（建議 200～270 字），語氣為「${TONE_LABELS[activeTone]}」。
-2. articleEn：對應的英文翻譯，必須使用台灣國中英文程度（CEFR A2 單字字彙與簡單清晰句型，避免艱深字）。
-3. a2Vocab：列出本篇用到的 6～8 個 CEFR A2 重點單字陣列，每項格式為 ["word", "詞性", "中文意思"]。
+2. articleEn：對應的英文翻譯，必須嚴格符合【${cefrInfo.promptSpec}】。
+3. enVocab：列出本篇用到的 6～8 個符合 CEFR ${cefrInfo.code} 難度的重點單字陣列，每項格式為 ["word", "詞性", "中文意思"]。
 4. 同步回傳 d1{who,when,where,why,how,impactScope}, d2, d3, d4, d5, title。
 口語情境：${rawText.slice(0, 2000)}
 請嚴格輸出純 JSON。`;
@@ -678,10 +824,13 @@
         parsed = JSON.parse((await res.json()).response);
       }
       clearTimeout(tid);
-      const base = buildFromPlainText(rawText, activeTone);
+      const base = buildFromPlainText(rawText, activeTone, activeCefr);
+      const vocab = Array.isArray(parsed.enVocab) ? parsed.enVocab : (Array.isArray(parsed.a2Vocab) ? parsed.a2Vocab : base.enVocab);
       data = Object.assign(base, parsed, {
         rawInput: rawText,
         tone: activeTone,
+        cefrLevel: activeCefr,
+        enVocab: vocab,
         d1: Object.assign(base.d1, parsed.d1 || {})
       });
       if (countZh(data.articleZh) > MAX_ZH_CHARS) {
@@ -689,10 +838,10 @@
       }
       if (isMobileView()) switchMobileTab('draft');
       switchRightTab('article', true);
-      showToast(`${provider === 'gemini' ? 'Gemini' : 'Ollama'} 雙語短文生成完成！`, 'success');
+      showToast(`${provider === 'gemini' ? 'Gemini' : 'Ollama'} 雙語短文（${activeCefr}）生成完成！`, 'success');
     } catch (e) {
       clearTimeout(tid);
-      data = buildFromPlainText(rawText, activeTone);
+      data = buildFromPlainText(rawText, activeTone, activeCefr);
       if (isMobileView()) switchMobileTab('draft');
       switchRightTab('article', true);
       showToast('外部 AI 連線失敗或逾時，已改由離線雙語引擎生成。', 'warning');
@@ -700,23 +849,28 @@
   }
 
   /* -------------------- 視圖渲染與手機/桌機導覽 -------------------- */
+  function getVocabList(d) {
+    return Array.isArray(d.enVocab) && d.enVocab.length ? d.enVocab : (Array.isArray(d.a2Vocab) ? d.a2Vocab : []);
+  }
+
   function buildA4Html() {
     const zhLen = countZh(data.articleZh);
-    const vocab = data.a2Vocab || [];
+    const cefr = CEFR_META[data.cefrLevel] || CEFR_META.A2;
+    const vocab = getVocabList(data);
     return `
       <div class="a4-mini">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;border-bottom:2px solid #1b4d5c;padding-bottom:8px;margin-bottom:8px;flex-wrap:wrap;">
           <div>
             <div style="font-size:15px;font-weight:800;color:#1b4d5c;">如果跟我這樣說..... — 雙語短文與約定單</div>
-            <div style="font-size:10.5px;color:#64748b;">${escapeHtml(data.title)}（${escapeHtml(TONE_LABELS[data.tone])}｜中文 ${zhLen} 字｜CEFR A2 英文）</div>
+            <div style="font-size:10.5px;color:#64748b;">${escapeHtml(data.title)}（${escapeHtml(TONE_LABELS[data.tone])}｜中文 ${zhLen} 字｜${escapeHtml(cefr.title)}）</div>
           </div>
           <div style="font-size:10.5px;color:#475569;">${escapeHtml(data.reportId)} ｜ ${escapeHtml(data.dateCreated)}</div>
         </div>
         <div class="a4-sec">一、如果跟我這樣說.....（中文完整短文 ${zhLen} / 300 字）</div>
         <div class="a4-essay">${escapeHtml(data.articleZh || '尚未生成')}</div>
-        <div class="a4-sec">二、國中程度英文翻譯（CEFR A2）</div>
+        <div class="a4-sec">二、英文翻譯（${escapeHtml(cefr.title)}）</div>
         <div class="a4-essay" style="font-family:Segoe UI,Arial,sans-serif;">${escapeHtml(data.articleEn || 'Not generated yet.')}</div>
-        <div class="a4-sec">三、CEFR A2 核心單字庫</div>
+        <div class="a4-sec">三、CEFR ${escapeHtml(cefr.code)} 核心單字庫</div>
         <table class="a4-table">
           <tr>${vocab.slice(0, 4).map(v => `<td><strong>${escapeHtml(v[0])}</strong> <span style="color:#64748b;">(${escapeHtml(v[1])})</span> ${escapeHtml(v[2])}</td>`).join('')}</tr>
           ${vocab.length > 4 ? `<tr>${vocab.slice(4, 8).map(v => `<td><strong>${escapeHtml(v[0])}</strong> <span style="color:#64748b;">(${escapeHtml(v[1])})</span> ${escapeHtml(v[2])}</td>`).join('')}</tr>` : ''}
@@ -739,11 +893,19 @@
     saveDraft();
     if (typeof document === 'undefined') return;
     const len = countZh(data.articleZh);
+    const cefrCode = (CEFR_META[data.cefrLevel] || CEFR_META.A2).code;
+
     const pill = document.getElementById('char-count-pill');
     if (pill) {
       pill.textContent = `${len}/300字`;
       pill.classList.toggle('over-limit', len > MAX_ZH_CHARS);
     }
+    const cefrPill = document.getElementById('cefr-pill');
+    if (cefrPill) cefrPill.textContent = `CEFR ${cefrCode}`;
+
+    const quickSpeak = document.getElementById('btn-speak-en-quick');
+    if (quickSpeak) quickSpeak.textContent = `🔊 朗讀 ${cefrCode} 英文`;
+
     const badge = document.getElementById('inline-zh-count');
     if (badge) {
       badge.textContent = `${len} / 300 字${len <= MAX_ZH_CHARS ? ' ✓' : '（超過上限）'}`;
@@ -772,7 +934,7 @@
       canvas.innerHTML = `
         <div class="empty-state">
           <h3>如果跟我這樣說..... — 1～2 句白話變 300 字好文章</h3>
-          <p>系統會自動補足完整對話結構（發生經過、當下處置、背後原因、改善補償、共同約定），並提供台灣國中程度 CEFR A2 英文翻譯、核心單字卡與語音朗讀。</p>
+          <p>系統會自動補足完整對話結構（發生經過、當下處置、背後原因、改善補償、共同約定），並提供可切換 CEFR A1／A2／B1／B2 難度的英文翻譯、單字卡與發音朗讀。</p>
           <button type="button" class="btn btn-primary btn-touch mob-only" data-go-mob="input">先說說發生的事</button>
         </div>`;
       return;
@@ -780,6 +942,8 @@
 
     if (activeRTab === 'article') {
       const len = countZh(data.articleZh);
+      const cefr = CEFR_META[data.cefrLevel] || CEFR_META.A2;
+      const vocab = getVocabList(data);
       canvas.innerHTML = `
         <div class="bilingual-stack">
           <div class="article-card">
@@ -806,8 +970,10 @@
           <div class="article-card">
             <div class="article-card-head">
               <div class="article-card-title">
-                <strong>英文翻譯（國中程度・CEFR A2）</strong>
-                <span class="badge badge-confirmed">A2 基礎字彙</span>
+                <strong>英文翻譯（${escapeHtml(cefr.title)}）</strong>
+                <div class="cefr-switch" role="radiogroup" aria-label="切換英文字彙難度">
+                  ${CEFR_ORDER.map(lv => `<button type="button" class="cefr-btn${lv === cefr.code ? ' active' : ''}" data-cefr="${lv}" aria-checked="${lv === cefr.code}" title="${escapeHtml(CEFR_META[lv].title)}">${lv}</button>`).join('')}
+                </div>
               </div>
               <div class="row-gap">
                 <button type="button" class="btn btn-secondary btn-mini" data-speak="1.0">🔊 朗讀</button>
@@ -817,9 +983,9 @@
             </div>
             <textarea rows="4" class="article-textarea en-text" data-edit="articleEn">${escapeHtml(data.articleEn)}</textarea>
             <div>
-              <div class="vocab-section-title">本篇國中 A2 核心單字（點擊發音）：</div>
+              <div class="vocab-section-title">本篇 CEFR ${escapeHtml(cefr.code)}（${escapeHtml(cefr.short)}）核心單字（點擊發音）：</div>
               <div class="vocab-grid">
-                ${(data.a2Vocab || []).map(v => `
+                ${vocab.map(v => `
                   <button type="button" class="vocab-chip" data-word="${escapeHtml(v[0])}">
                     <span class="vocab-word">${escapeHtml(v[0])}</span>
                     <span class="vocab-pos">(${escapeHtml(v[1])})</span>
@@ -934,8 +1100,9 @@
     if (!data.rawInput && !data.d1.problemDesc) return;
     data.tone = newTone;
     data.articleZh = composeZhArticle(data);
-    const enPack = composeA2English(data, extractActorAndTime(data.rawInput || data.d1.problemDesc));
+    const enPack = composeEnglish(data, extractActorAndTime(data.rawInput || data.d1.problemDesc), activeCefr);
     data.articleEn = enPack.en;
+    data.enVocab = enPack.vocab;
     refreshAllViews(true);
     showToast(`已切換為「${TONE_LABELS[newTone]}」`);
   }
@@ -1007,11 +1174,13 @@
   }
 
   function buildPptxUint8Array(d) {
+    const cefr = CEFR_META[d.cefrLevel] || CEFR_META.A2;
+    const vocab = getVocabList(d);
     const slides = [
-      { bg: '14222B', tc: 'FFFFFF', bc: 'DCE7EC', t: d.title || '如果跟我這樣說.....', sub: `如果跟我這樣說..... | 中文 ${countZh(d.articleZh)}字 | CEFR A2`, lines: [`紀錄編號：${d.reportId}`, `建立日期：${d.dateCreated}`, `語氣風格：${TONE_LABELS[d.tone] || ''}`] },
+      { bg: '14222B', tc: 'FFFFFF', bc: 'DCE7EC', t: d.title || '如果跟我這樣說.....', sub: `如果跟我這樣說..... | 中文 ${countZh(d.articleZh)}字 | CEFR ${cefr.code}`, lines: [`紀錄編號：${d.reportId}`, `建立日期：${d.dateCreated}`, `語氣風格：${TONE_LABELS[d.tone] || ''}｜英文難度：${cefr.title}`] },
       { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: `如果跟我這樣說.....（${countZh(d.articleZh)} / 300 字）`, sub: 'STRUCTURED CHINESE ARTICLE', lines: [d.articleZh] },
-      { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: '國中程度英文翻譯（CEFR A2）', sub: 'JUNIOR HIGH A2 ENGLISH VERSION', lines: [d.articleEn] },
-      { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: 'CEFR A2 核心單字庫', sub: 'KEY A2 VOCABULARY', lines: (d.a2Vocab || []).map(v => `${v[0]} (${v[1]}) — ${v[2]}`) },
+      { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: `英文翻譯（${cefr.title}）`, sub: `CEFR ${cefr.code} ENGLISH VERSION`, lines: [d.articleEn] },
+      { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: `CEFR ${cefr.code} 核心單字庫`, sub: `KEY ${cefr.code} VOCABULARY`, lines: vocab.map(v => `${v[0]} (${v[1]}) — ${v[2]}`) },
       { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: '對話結構拆解與共同約定', sub: 'DIALOGUE SUMMARY', lines: [`D1 經過：${d.d1.who}｜${d.d1.when}｜${d.d1.impactScope}`, `D2 處置：${d.d2}`, `D3 原因：${d.d3}`, `D4 改善：${d.d4}`, `D5 約定：${d.d5}`] }
     ];
     const mkSlide = s => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${s.bg}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="T"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="685800" y="457200"/><a:ext cx="10820400" cy="1005840"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr wrap="square"/><a:lstStyle/><a:p><a:r><a:rPr lang="zh-TW" sz="2400" b="1"><a:solidFill><a:srgbClr val="${s.tc}"/></a:solidFill><a:ea typeface="Microsoft JhengHei"/></a:rPr><a:t>${escapeXml(s.t)}</a:t></a:r></a:p><a:p><a:r><a:rPr lang="en-US" sz="1100" b="1"><a:solidFill><a:srgbClr val="697A86"/></a:solidFill></a:rPr><a:t>${escapeXml(s.sub)}</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="B"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="685800" y="1645920"/><a:ext cx="10820400" cy="4663440"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr wrap="square"/><a:lstStyle/>${s.lines.map(l => `<a:p><a:pPr><a:spcBef><a:spcPts val="600"/></a:spcBef></a:pPr><a:r><a:rPr lang="zh-TW" sz="1700"><a:solidFill><a:srgbClr val="${s.bc}"/></a:solidFill><a:ea typeface="Microsoft JhengHei"/></a:rPr><a:t>${escapeXml(l)}</a:t></a:r></a:p>`).join('')}</p:txBody></p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
@@ -1035,7 +1204,9 @@
 
   async function exportPpt() {
     if (!data.articleZh) { showToast('請先整理出中英短文！', 'warning'); return; }
-    const fileName = `如果跟我這樣說_雙語簡報_${sanitizeFilename(data.reportId)}.pptx`;
+    const cefr = CEFR_META[data.cefrLevel] || CEFR_META.A2;
+    const vocab = getVocabList(data);
+    const fileName = `如果跟我這樣說_${cefr.code}_雙語簡報_${sanitizeFilename(data.reportId)}.pptx`;
     try {
       if (typeof window !== 'undefined' && typeof window.PptxGenJS === 'function') {
         const pptx = new window.PptxGenJS();
@@ -1045,7 +1216,7 @@
         const s1 = pptx.addSlide();
         s1.background = { color: '14222B' };
         s1.addText(data.title || '如果跟我這樣說.....', { x: 0.7, y: 1.5, w: 11.9, h: 1.2, fontSize: 30, bold: true, color: 'FFFFFF', fontFace: 'Microsoft JhengHei' });
-        s1.addText(`如果跟我這樣說..... ｜ 中文 ${countZh(data.articleZh)} / 300 字 ｜ CEFR A2`, { x: 0.7, y: 2.8, w: 11.9, h: 0.6, fontSize: 15, color: 'A7DFD4', fontFace: 'Microsoft JhengHei' });
+        s1.addText(`如果跟我這樣說..... ｜ 中文 ${countZh(data.articleZh)} / 300 字 ｜ ${cefr.title}`, { x: 0.7, y: 2.8, w: 11.9, h: 0.6, fontSize: 15, color: 'A7DFD4', fontFace: 'Microsoft JhengHei' });
         s1.addText(`紀錄編號：${data.reportId}   建立日期：${data.dateCreated}   語氣：${TONE_LABELS[data.tone]}`, { x: 0.7, y: 3.6, w: 11.9, h: 0.6, fontSize: 13, color: 'DCE7EC', fontFace: 'Microsoft JhengHei' });
 
         const addCardSlide = (heading, sub, bodyText, font = 'Microsoft JhengHei', size = 18) => {
@@ -1057,8 +1228,8 @@
         };
 
         addCardSlide(`如果跟我這樣說.....（${countZh(data.articleZh)} / 300 字）`, 'STRUCTURED CHINESE ARTICLE', data.articleZh, 'Microsoft JhengHei', 19);
-        addCardSlide('國中程度英文翻譯（CEFR A2）', 'JUNIOR HIGH A2 ENGLISH VERSION', data.articleEn, 'Segoe UI', 18);
-        addCardSlide('CEFR A2 核心單字庫', 'KEY A2 VOCABULARY', (data.a2Vocab || []).map(v => `• ${v[0]} (${v[1]}) — ${v[2]}`).join('\n'), 'Microsoft JhengHei', 17);
+        addCardSlide(`英文翻譯（${cefr.title}）`, `CEFR ${cefr.code} ENGLISH VERSION`, data.articleEn, 'Segoe UI', 17);
+        addCardSlide(`CEFR ${cefr.code} 核心單字庫`, `KEY ${cefr.code} VOCABULARY`, vocab.map(v => `• ${v[0]} (${v[1]}) — ${v[2]}`).join('\n'), 'Microsoft JhengHei', 17);
         addCardSlide('對話結構拆解與共同約定', 'DIALOGUE SUMMARY', [
           `D1 發生經過：${data.d1.who}｜${data.d1.when}｜${data.d1.impactScope}`,
           `D2 當下處置：${data.d2}`,
@@ -1096,13 +1267,12 @@
         await sleep(16);
       }
       await sleep(220);
-      data = buildFromPlainText(SCENARIOS.compound_3c_emotion, activeTone);
+      data = buildFromPlainText(SCENARIOS.compound_3c_emotion, activeTone, activeCefr);
       if (isMobileView()) switchMobileTab('draft');
       switchRightTab('article', true);
-      showToast(`已自動補足 ${countZh(data.articleZh)} 字結構短文 ＋ 國中 A2 英文！`, 'success');
+      showToast(`已整理成 ${countZh(data.articleZh)} 字短文 ＋ ${CEFR_META[activeCefr].title}！`, 'success');
       await sleep(1100);
-      applySpokenRefinement('約定平日晚上11點手機放客廳充電');
-      showToast('已融入新約定並即時更新中英雙語短文！', 'success');
+      applyCefrSwitch(activeCefr === 'B1' ? 'A2' : 'B1');
     } finally {
       isDemoing = false;
       btn.disabled = false;
@@ -1135,10 +1305,10 @@
       const t = SCENARIOS[e.target.value];
       if (t) {
         document.getElementById('raw-input').value = t;
-        data = buildFromPlainText(t, activeTone);
+        data = buildFromPlainText(t, activeTone, activeCefr);
         if (isMobileView()) switchMobileTab('draft');
         switchRightTab('article', true);
-        showToast(`已補足 ${countZh(data.articleZh)} 字結構短文與國中 A2 英文！`, 'success');
+        showToast(`已整理成 ${countZh(data.articleZh)} 字短文與 ${CEFR_META[activeCefr].title}！`, 'success');
       }
     });
 
@@ -1158,7 +1328,7 @@
       const res = applySpokenRefinement(v);
       inp.value = '';
       const fb = document.getElementById('refine-feedback');
-      fb.textContent = `已融入【${res.label}】，目前中文 ${res.zhLen} / 300 字！`;
+      fb.textContent = `已融入【${res.label}】，目前中文 ${res.zhLen} / 300 字（英文 ${res.cefrLevel}）！`;
       fb.hidden = false;
       showToast('已即時融入並重寫中英雙語短文！', 'success');
     };
@@ -1176,7 +1346,8 @@
     });
 
     document.getElementById('btn-copy-both').addEventListener('click', async () => {
-      const txt = `【${data.title}】\n\n${data.articleZh}\n\n[English - CEFR A2]\n${data.articleEn}`;
+      const cefrCode = (CEFR_META[data.cefrLevel] || CEFR_META.A2).code;
+      const txt = `【${data.title}】\n\n${data.articleZh}\n\n[English - CEFR ${cefrCode}]\n${data.articleEn}`;
       try {
         await navigator.clipboard.writeText(txt);
         showToast('已複製中英雙語全文！', 'success');
@@ -1191,12 +1362,15 @@
       const gm = e.target.closest('[data-go-mob]');
       if (gm) { switchMobileTab(gm.dataset.goMob); return; }
 
+      const cf = e.target.closest('[data-cefr]');
+      if (cf) { applyCefrSwitch(cf.dataset.cefr); return; }
+
       const cp = e.target.closest('[data-copy]');
       if (cp) {
         const val = cp.dataset.copy === 'zh' ? data.articleZh : data.articleEn;
         try {
           await navigator.clipboard.writeText(val);
-          showToast(cp.dataset.copy === 'zh' ? '已複製中文短文！' : '已複製 A2 英文翻譯！', 'success');
+          showToast(cp.dataset.copy === 'zh' ? '已複製中文短文！' : `已複製 CEFR ${activeCefr} 英文翻譯！`, 'success');
         } catch (err) {}
         return;
       }
@@ -1210,10 +1384,11 @@
       const rs = e.target.closest('[data-resync]');
       if (rs) {
         data.articleZh = composeZhArticle(data);
-        const enPack = composeA2English(data, extractActorAndTime(data.rawInput || data.d1.problemDesc));
+        const enPack = composeEnglish(data, extractActorAndTime(data.rawInput || data.d1.problemDesc), activeCefr);
         data.articleEn = enPack.en;
+        data.enVocab = enPack.vocab;
         switchRightTab('article', true);
-        showToast(`已依 5D 內容重組（${countZh(data.articleZh)} / 300 字）！`, 'success');
+        showToast(`已依結構重組（${countZh(data.articleZh)} / 300 字｜CEFR ${activeCefr}）！`, 'success');
       }
     });
 
@@ -1250,7 +1425,7 @@
     document.getElementById('btn-mob-ppt').addEventListener('click', exportPpt);
 
     const doPrint = () => {
-      if (!data.articleZh) { showToast('請先生成雙語短文！', 'warning'); return; }
+      if (!data.articleZh) { showToast('請先整理出中英短文！', 'warning'); return; }
       document.getElementById('print-mount').innerHTML = buildA4Html();
       window.print();
     };
@@ -1261,14 +1436,16 @@
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         data = Object.assign(blankData(), JSON.parse(saved));
+        activeCefr = CEFR_META[data.cefrLevel] ? data.cefrLevel : 'A2';
+        data.cefrLevel = activeCefr;
         document.getElementById('raw-input').value = data.rawInput || '';
       } else {
         document.getElementById('raw-input').value = SCENARIOS.compound_3c_emotion;
-        data = buildFromPlainText(SCENARIOS.compound_3c_emotion, activeTone);
+        data = buildFromPlainText(SCENARIOS.compound_3c_emotion, activeTone, activeCefr);
       }
     } catch (e) {
       document.getElementById('raw-input').value = SCENARIOS.compound_3c_emotion;
-      data = buildFromPlainText(SCENARIOS.compound_3c_emotion, activeTone);
+      data = buildFromPlainText(SCENARIOS.compound_3c_emotion, activeTone, activeCefr);
     }
 
     switchRightTab('article');
@@ -1283,6 +1460,8 @@
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       MAX_ZH_CHARS,
+      CEFR_ORDER,
+      CEFR_META,
       SCENARIOS,
       KB,
       countZh,
@@ -1293,9 +1472,10 @@
       extractActorAndTime,
       detectDomains,
       composeZhArticle,
-      composeA2English,
+      composeEnglish,
       buildFromPlainText,
       applySpokenRefinement,
+      applyCefrSwitch,
       buildPptxUint8Array,
       getData: () => data,
       setData: d => { data = d; }
