@@ -147,7 +147,7 @@
     '3c_sleep': {
       id: '3c_sleep', label: '3C 與睡眠作息',
       enLabel: { A1: 'phone and sleep', A2: 'phone habits and sleep', B1: 'sleep schedules and screen use', B2: 'sleep hygiene and digital self-regulation' },
-      kw: /(手機|手遊|短影音|抖音|IG|YouTube|追劇|遊戲|Switch|平板|電腦|熬夜|凌晨|清晨|半夜|遲到|睡過頭|起不來|叫不醒|睡眠|打瞌睡)/g,
+      kw: /(手機|手遊|短影音|抖音|IG|YouTube|追劇|遊戲|Switch|平板|電腦|熬夜|凌晨|清晨|半夜|遲到|睡過頭|起不來|叫不醒|睡眠|睡覺|想睡|補眠|晚睡|沒睡飽|太累|很累|累壞|作息|打瞌睡)/g,
       title: a => `${a}夜間使用手機與作息調整`,
       when: '昨晚至今天早上', where: '家中臥室', item: '手機',
       why: '違反睡前收手機與準時上學的約定', how: '早上叫不醒上學遲到被發現', impact: '導致遲到、精神不濟也讓家人擔心',
@@ -491,9 +491,33 @@
     };
   }
 
+  const TONE_EN_FRAME = {
+    gentle_family: {
+      A1: { open: 'In our family talk: ', close: 'We will help each other with love.' },
+      A2: { open: 'Family talk: ', close: 'With care and patience, our family will support each other.' },
+      B1: { open: 'In a calm family talk: ', close: 'With mutual understanding, our family can build a better habit together.' },
+      B2: { open: 'Supportive family dialogue: ', close: 'Through empathy and steady encouragement, our household will reinforce this positive change.' }
+    },
+    teen_growth: {
+      A1: { open: 'My self-check: ', close: 'I want to do better next time.' },
+      A2: { open: 'My reflection: ', close: 'I want to take responsibility and grow stronger from this.' },
+      B1: { open: 'Self-reflection: ', close: 'I am determined to take ownership of my habits and keep improving.' },
+      B2: { open: 'Personal reflection: ', close: 'I am committed to holding myself accountable and turning this setback into lasting growth.' }
+    },
+    teacher_record: {
+      A1: { open: 'Teacher note: ', close: 'School and home will check progress next week.' },
+      A2: { open: 'Guidance record: ', close: 'The teacher and parents will follow up on the student\'s progress together.' },
+      B1: { open: 'Counseling summary: ', close: 'Both the school and parents will continue to monitor the student\'s progress and offer guidance.' },
+      B2: { open: 'Counseling case summary: ', close: 'School staff and guardians will jointly review behavioral progress and provide ongoing guidance.' }
+    }
+  };
+
   function getEnglishSubject(actor, tone) {
-    if (tone === 'teen_growth' || actor === '我') {
+    if (tone === 'teen_growth') {
       return { subj: 'I', subjLow: 'I', Subj: 'I', obj: 'me', poss: 'my', we: 'my family and I' };
+    }
+    if (tone === 'teacher_record') {
+      return { subj: 'the student', subjLow: 'the student', Subj: 'The student', obj: 'the student', poss: 'their', we: 'the teacher and parents' };
     }
     const map = {
       '弟弟': { subj: 'my younger brother', subjLow: 'he', Subj: 'He', obj: 'him', poss: 'his', we: 'we' },
@@ -503,10 +527,10 @@
       '妹妹': { subj: 'my younger sister', subjLow: 'she', Subj: 'She', obj: 'her', poss: 'her', we: 'we' }
     };
     if (map[actor]) return map[actor];
-    if (tone === 'teacher_record') {
-      return { subj: 'the student', subjLow: 'the student', Subj: 'The student', obj: 'the student', poss: 'their', we: 'we' };
+    if (actor === '我') {
+      return { subj: 'I', subjLow: 'I', Subj: 'I', obj: 'me', poss: 'my', we: 'my family and I' };
     }
-    return { subj: 'the teenager', subjLow: 'he or she', Subj: 'He or she', obj: 'them', poss: 'their', we: 'we' };
+    return { subj: 'our child', subjLow: 'he or she', Subj: 'He or she', obj: 'them', poss: 'their', we: 'our family' };
   }
 
   function detectDomains(text) {
@@ -524,25 +548,28 @@
     const cleanRaw = String(d.d1.problemDesc || '').replace(/\s+/g, '').replace(/[。！!]$/, '');
     const prefix = d.tone === 'teen_growth'
       ? '回顧這次事件，'
-      : (d.tone === 'teacher_record' ? '本次輔導紀錄摘要：' : '');
+      : (d.tone === 'teacher_record' ? '本次輔導紀錄摘要：' : '家人好好聊聊這次的事：');
+    const closingActor = d.tone === 'teen_growth'
+      ? '最後我與家人共同'
+      : (d.tone === 'teacher_record' ? '最後親師生共同' : '最後大家一起');
     const s2 = String(d.d2 || '').replace(/[。！!]$/, '');
     const s3 = String(d.d3 || '').replace(/[。！!]$/, '');
     const s4 = String(d.d4 || '').replace(/[。！!]$/, '');
     const s5 = String(d.d5 || '').replace(/[。！!]$/, '');
 
     const assemble = (rawPart, p2, p3, p4, p5) =>
-      `${prefix}${rawPart}。當下先${p2.replace(/^先/, '')}。細想背後原因，主要是${p3.replace(/^因為/, '')}。未來改善方面，${p4}。最後大家共同${p5}。`;
+      `${prefix}${rawPart}。當下先${p2.replace(/^先/, '')}。細想背後原因，主要是${p3.replace(/^因為/, '')}。未來改善方面，${p4}。${closingActor}${p5}。`;
 
     let article = assemble(cleanRaw, s2, s3, s4, s5);
     if (countZh(article) > MAX_ZH_CHARS) {
       const trimClause = (str, maxLen) =>
         str.length <= maxLen ? str : str.slice(0, maxLen - 1).replace(/[，、；：]$/, '') + '等';
       article = assemble(
-        trimClause(cleanRaw, 58),
+        trimClause(cleanRaw, 54),
         trimClause(s2, 42),
-        trimClause(s3, 46),
-        trimClause(s4, 52),
-        trimClause(s5, 48)
+        trimClause(s3, 44),
+        trimClause(s4, 50),
+        trimClause(s5, 46)
       );
     }
     if (countZh(article) > MAX_ZH_CHARS) {
@@ -603,9 +630,11 @@
 
   function composeEnglish(d, actorInfo, level = d.cefrLevel || activeCefr) {
     const lvl = CEFR_META[level] ? level : 'A2';
+    const toneKey = TONE_EN_FRAME[d.tone] ? d.tone : 'gentle_family';
+    const frame = TONE_EN_FRAME[toneKey][lvl] || TONE_EN_FRAME.gentle_family.A2;
     const dom1 = KB[d.primaryDomain] || KB['3c_sleep'];
     const dom2 = d.secondaryDomain ? KB[d.secondaryDomain] : null;
-    const s = getEnglishSubject(actorInfo.actor, d.tone);
+    const s = getEnglishSubject(actorInfo.actor, toneKey);
     const t = actorInfo.timeEn || 'Recently';
     const pack1 = dom1.levels[lvl] || dom1.levels.A2;
 
@@ -642,7 +671,7 @@
     }
 
     const extra = (d.refinements || []).map(r => translateRefinementByLevel(r, lvl));
-    const fullText = [combined, ...extra].filter(Boolean).join(' ');
+    const fullText = `${frame.open}${[combined, ...extra, frame.close].filter(Boolean).join(' ')}`;
 
     const vocabMap = new Map();
     pack1.vocab.forEach(v => vocabMap.set(v[0], v));
@@ -971,6 +1000,7 @@
             <div class="article-card-head">
               <div class="article-card-title">
                 <strong>英文翻譯（${escapeHtml(cefr.title)}）</strong>
+                <span class="badge badge-inferred">${escapeHtml(TONE_LABELS[data.tone] || TONE_LABELS.gentle_family)}</span>
                 <div class="cefr-switch" role="radiogroup" aria-label="切換英文字彙難度">
                   ${CEFR_ORDER.map(lv => `<button type="button" class="cefr-btn${lv === cefr.code ? ' active' : ''}" data-cefr="${lv}" aria-checked="${lv === cefr.code}" title="${escapeHtml(CEFR_META[lv].title)}">${lv}</button>`).join('')}
                 </div>
@@ -1104,7 +1134,7 @@
     data.articleEn = enPack.en;
     data.enVocab = enPack.vocab;
     refreshAllViews(true);
-    showToast(`已切換為「${TONE_LABELS[newTone]}」`);
+    showToast(`已切換為「${TONE_LABELS[newTone]}」，中英短文已同步更新！`, 'success');
   }
 
   /* -------------------- Word & 16:9 雙語 PPTX 匯出 -------------------- */
@@ -1437,7 +1467,9 @@
       if (saved) {
         data = Object.assign(blankData(), JSON.parse(saved));
         activeCefr = CEFR_META[data.cefrLevel] ? data.cefrLevel : 'A2';
+        activeTone = TONE_LABELS[data.tone] ? data.tone : 'gentle_family';
         data.cefrLevel = activeCefr;
+        data.tone = activeTone;
         document.getElementById('raw-input').value = data.rawInput || '';
       } else {
         document.getElementById('raw-input').value = SCENARIOS.compound_3c_emotion;
@@ -1448,6 +1480,11 @@
       data = buildFromPlainText(SCENARIOS.compound_3c_emotion, activeTone, activeCefr);
     }
 
+    document.querySelectorAll('.seg-btn').forEach(b => {
+      const act = b.dataset.tone === activeTone;
+      b.classList.toggle('active', act);
+      b.setAttribute('aria-checked', String(act));
+    });
     switchRightTab('article');
     switchMobileTab(isMobileView() ? 'input' : 'draft');
   }
@@ -1476,6 +1513,7 @@
       buildFromPlainText,
       applySpokenRefinement,
       applyCefrSwitch,
+      applyToneSwitch,
       buildPptxUint8Array,
       getData: () => data,
       setData: d => { data = d; }
