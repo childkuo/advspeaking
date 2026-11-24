@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="5D 雙語短文小幫手：輸入口語白話情境，自動補足 300 字內完整 5D 結構短文＋台灣國中程度 CEFR A2 英文翻譯與核心單字發音，桌機單畫面零捲動＋手機底部 4 分頁操作。">
+  <meta name="description" content="如果跟我這樣說.....：輸入口語白話情境，自動補足 300 字內完整結構短文＋台灣國中程度 CEFR A2 英文翻譯與核心單字發音，桌機單畫面零捲動＋手機底部 4 分頁操作。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http://localhost:11434 https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self';">
-  <title>5D 雙語短文小幫手 — 300字結構短文 ＋ 國中 A2 英文</title>
+  <title>如果跟我這樣說..... — 300字完整短文 ＋ 國中 A2 英文</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="libs/jszip.min.js" defer></script>
   <script src="libs/pptxgen.min.js" defer></script>
@@ -18,10 +18,10 @@
     <!-- 頂部精簡導覽列 -->
     <header class="topbar">
       <div class="topbar-left">
-        <span class="brand-mark" aria-hidden="true">5D</span>
+        <span class="brand-mark" aria-hidden="true">說</span>
         <div class="brand-text">
-          <div class="brand-title">5D 雙語短文小幫手</div>
-          <div class="brand-sub">口語白話 → 300字結構文章 ＋ 國中 A2 英文</div>
+          <div class="brand-title">如果跟我這樣說.....</div>
+          <div class="brand-sub">口語白話 → 300字完整短文 ＋ 國中 A2 英文</div>
         </div>
         <div class="status-pill" title="中文文章字數上限 300 字與英文分級">
           <strong id="char-count-pill">0/300字</strong>
@@ -54,10 +54,10 @@
       <aside class="left-pane" id="left-wrapper">
         <section class="panel-card mob-pane mob-active" id="pane-input">
           <div class="panel-head">
-            <h2>① 輸入口語白話情境</h2>
+            <h2>① 先說說發生的事</h2>
             <button type="button" id="btn-auto-demo" class="btn btn-ghost btn-xs" title="快捷鍵 Alt+D">自動示範</button>
           </div>
-          <select id="scenario-select" class="control select-full" aria-label="國高中情境範例快選">
+          <select id="scenario-select" class="control select-full" aria-label="生活情境範例快選">
             <option value="compound_3c_emotion">範例：熬夜玩手機＋甩門頂嘴（複合）</option>
             <option value="3c_sleep">範例：3C 滑短影音熬夜遲到</option>
             <option value="study_exam">範例：段考藏考卷＋缺交習作</option>
@@ -69,7 +69,7 @@
             <option value="safety_health">範例：騎車未戴安全帽搶黃燈</option>
           </select>
           <label for="raw-input" class="sr-only">輸入口語白話情境</label>
-          <textarea id="raw-input" class="control raw-box" rows="4" placeholder="用平常說話的方式打 1～2 句，系統自動補足 ≤300 字完整 5D 結構短文 ＋ 國中程度 A2 英文翻譯..."></textarea>
+          <textarea id="raw-input" class="control raw-box" rows="4" placeholder="用平常說話的方式打 1～2 句，幫你整理成「如果跟我這樣說.....」≤300 字完整短文 ＋ 國中 A2 英文翻譯..."></textarea>
 
           <!-- 手機與平板語氣切換 -->
           <div class="mob-tone-wrap">
@@ -81,14 +81,14 @@
             </div>
           </div>
 
-          <button type="button" id="btn-generate" class="btn btn-primary btn-cta">一鍵補足 300字短文 ＋ A2 英文</button>
+          <button type="button" id="btn-generate" class="btn btn-primary btn-cta">幫我整理成 300字短文 ＋ A2 英文</button>
         </section>
 
         <section class="panel-card refine-panel mob-pane" id="pane-refine">
           <div class="panel-head">
-            <h2>② 口語追加微調</h2>
+            <h2>② 還想再補一句話</h2>
           </div>
-          <p class="mob-only footer-tip">再補一句平常的話，系統自動融入結構短文並即時更新 ≤300 字中文與國中 A2 英文。</p>
+          <p class="mob-only footer-tip">再補一句平常的話，系統自動融入文章並即時更新 ≤300 字中文與國中 A2 英文。</p>
           <div class="refine-row">
             <label for="refine-input" class="sr-only">輸入補充白話</label>
             <input type="text" id="refine-input" class="control flex-1" placeholder="再補一句話，如：事後有道歉 / 約定11點收手機...">
@@ -119,13 +119,13 @@
       <!-- 右欄：7 分頁單畫面雙語工作畫布 -->
       <section class="right-pane mob-pane" id="pane-right">
         <div class="right-head" id="right-tabs-bar">
-          <nav class="right-tabs" id="right-tabs" aria-label="中英短文與 5D 步驟切換">
+          <nav class="right-tabs" id="right-tabs" aria-label="中英短文與對話結構切換">
             <button type="button" class="rtab active" data-rtab="article">中英短文</button>
-            <button type="button" class="rtab" data-rtab="d1">D1 事實</button>
+            <button type="button" class="rtab" data-rtab="d1">D1 經過</button>
             <button type="button" class="rtab" data-rtab="d2">D2 處置</button>
-            <button type="button" class="rtab" data-rtab="d3">D3 真因</button>
+            <button type="button" class="rtab" data-rtab="d3">D3 原因</button>
             <button type="button" class="rtab" data-rtab="d4">D4 改善</button>
-            <button type="button" class="rtab" data-rtab="d5">D5 公約</button>
+            <button type="button" class="rtab" data-rtab="d5">D5 約定</button>
             <button type="button" class="rtab desk-only" data-rtab="a4">A4 雙語單</button>
           </nav>
           <div id="domain-badges" class="domain-badges"></div>
@@ -163,7 +163,7 @@
       </button>
       <button type="button" class="mnav" data-mtab="refine">
         <span class="mnav-ico" aria-hidden="true">💬</span>
-        <span>口語微調</span>
+        <span>補一句</span>
       </button>
       <button type="button" class="mnav" data-mtab="export">
         <span class="mnav-ico" aria-hidden="true">📄</span>
@@ -176,7 +176,7 @@
   <div id="ai-modal" class="modal-backdrop no-print" hidden>
     <div class="modal-card">
       <div class="panel-head">
-        <h3>雙軌雙語補完引擎設定</h3>
+        <h3>「如果跟我這樣說.....」AI 引擎設定</h3>
         <button type="button" id="btn-close-ai" class="btn btn-ghost btn-xs">關閉</button>
       </div>
       <div class="field">

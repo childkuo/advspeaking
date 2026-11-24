@@ -1,5 +1,5 @@
 /**
- * 5D 雙語短文小幫手 — 口語白話 → ≤300 字完整 5D 結構短文 ＋ 國中程度 CEFR A2 英文翻譯
+ * 如果跟我這樣說..... — 口語白話 → ≤300 字完整結構短文 ＋ 國中程度 CEFR A2 英文翻譯
  * 支援 100% 離線雙語引擎 ＋ 選填 Gemini／Ollama，桌機單畫面零捲動 ＋ 手機底部 4 分頁導覽
  */
 (() => {
@@ -611,23 +611,23 @@
   async function runGenerate() {
     const rawEl = document.getElementById('raw-input');
     const txt = rawEl ? rawEl.value.trim() : '';
-    if (!txt) { showToast('請先輸入口語白話情境！', 'warning'); return; }
+    if (!txt) { showToast('請先說說發生的事情！', 'warning'); return; }
     const provider = document.getElementById('llm-provider').value;
     const btn = document.getElementById('btn-generate');
     btn.disabled = true;
-    btn.textContent = '補足短文與 A2 翻譯中...';
+    btn.textContent = '整理短文與 A2 翻譯中...';
     try {
       if (provider === 'offline') {
         data = buildFromPlainText(txt, activeTone);
         if (isMobileView()) switchMobileTab('draft');
         switchRightTab('article', true);
-        showToast(`已補足 ${countZh(data.articleZh)} 字結構短文與國中 A2 英文！`, 'success');
+        showToast(`已整理成 ${countZh(data.articleZh)} 字完整短文與國中 A2 英文！`, 'success');
       } else {
         await callExternalAi(provider, txt);
       }
     } finally {
       btn.disabled = false;
-      btn.textContent = '一鍵補足 300字短文 ＋ A2 英文';
+      btn.textContent = '幫我整理成 300字短文 ＋ A2 英文';
     }
   }
 
@@ -642,7 +642,7 @@
       return;
     }
 
-    const prompt = `請將以下台灣國高中生口語白話情境，自動補足為完整 5D 結構（發生經過、當下處置、真正原因、改善補償、生活公約）的繁體中文短文與英文翻譯。
+    const prompt = `你現在是「如果跟我這樣說.....」雙語對話整理助手。請將以下台灣國高中生口語白話情境，自動補足為完整結構（發生經過、當下處置、真正原因、改善補償、共同約定）的繁體中文短文與英文翻譯。
 嚴格要求：
 1. articleZh：流暢自然的完整結構中文文章，總字數絕對不可超過 300 字（建議 200～270 字），語氣為「${TONE_LABELS[activeTone]}」。
 2. articleEn：對應的英文翻譯，必須使用台灣國中英文程度（CEFR A2 單字字彙與簡單清晰句型，避免艱深字）。
@@ -707,12 +707,12 @@
       <div class="a4-mini">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;border-bottom:2px solid #1b4d5c;padding-bottom:8px;margin-bottom:8px;flex-wrap:wrap;">
           <div>
-            <div style="font-size:15px;font-weight:800;color:#1b4d5c;">5D 青春對話雙語結構短文與約定單</div>
+            <div style="font-size:15px;font-weight:800;color:#1b4d5c;">如果跟我這樣說..... — 雙語短文與約定單</div>
             <div style="font-size:10.5px;color:#64748b;">${escapeHtml(data.title)}（${escapeHtml(TONE_LABELS[data.tone])}｜中文 ${zhLen} 字｜CEFR A2 英文）</div>
           </div>
           <div style="font-size:10.5px;color:#475569;">${escapeHtml(data.reportId)} ｜ ${escapeHtml(data.dateCreated)}</div>
         </div>
-        <div class="a4-sec">一、完整 5D 結構中文短文（${zhLen} / 300 字）</div>
+        <div class="a4-sec">一、如果跟我這樣說.....（中文完整短文 ${zhLen} / 300 字）</div>
         <div class="a4-essay">${escapeHtml(data.articleZh || '尚未生成')}</div>
         <div class="a4-sec">二、國中程度英文翻譯（CEFR A2）</div>
         <div class="a4-essay" style="font-family:Segoe UI,Arial,sans-serif;">${escapeHtml(data.articleEn || 'Not generated yet.')}</div>
@@ -721,13 +721,13 @@
           <tr>${vocab.slice(0, 4).map(v => `<td><strong>${escapeHtml(v[0])}</strong> <span style="color:#64748b;">(${escapeHtml(v[1])})</span> ${escapeHtml(v[2])}</td>`).join('')}</tr>
           ${vocab.length > 4 ? `<tr>${vocab.slice(4, 8).map(v => `<td><strong>${escapeHtml(v[0])}</strong> <span style="color:#64748b;">(${escapeHtml(v[1])})</span> ${escapeHtml(v[2])}</td>`).join('')}</tr>` : ''}
         </table>
-        <div class="a4-sec">四、5D 結構摘要與雙方親筆簽認</div>
+        <div class="a4-sec">四、對話結構摘要與雙方親筆簽認</div>
         <table class="a4-table">
-          <tr><th style="width:18%;">D1 事實影響</th><td>${escapeHtml(data.d1.who)}｜${escapeHtml(data.d1.when)}｜${escapeHtml(data.d1.impactScope)}</td></tr>
+          <tr><th style="width:18%;">D1 發生經過</th><td>${escapeHtml(data.d1.who)}｜${escapeHtml(data.d1.when)}｜${escapeHtml(data.d1.impactScope)}</td></tr>
           <tr><th>D2 當下處置</th><td>${escapeHtml(data.d2)}</td></tr>
-          <tr><th>D3 真正原因</th><td>${escapeHtml(data.d3)}</td></tr>
+          <tr><th>D3 背後原因</th><td>${escapeHtml(data.d3)}</td></tr>
           <tr><th>D4 改善補償</th><td>${escapeHtml(data.d4)}</td></tr>
-          <tr><th>D5 生活公約</th><td><strong>${escapeHtml(data.d5)}</strong></td></tr>
+          <tr><th>D5 共同約定</th><td><strong>${escapeHtml(data.d5)}</strong></td></tr>
         </table>
         <table class="a4-table" style="margin-bottom:0;">
           <tr><th style="width:18%;">當事人簽名</th><td style="width:32%;height:34px;color:#94a3b8;font-size:10px;vertical-align:bottom;">（請親筆簽名）</td><th style="width:18%;">家長／師長簽名</th><td style="width:32%;height:34px;color:#94a3b8;font-size:10px;vertical-align:bottom;">（請親筆簽名）</td></tr>
@@ -771,9 +771,9 @@
     if (!data.articleZh && !data.d1.problemDesc) {
       canvas.innerHTML = `
         <div class="empty-state">
-          <h3>輸入 1～2 句口語白話，立即產出 300 字內結構短文與國中 A2 英文</h3>
-          <p>系統會自動補足完整 5D 結構（發生經過、當下處置、背後真因、改善補償、生活公約），並提供台灣國中程度 CEFR A2 英文翻譯、核心單字卡與語音朗讀。</p>
-          <button type="button" class="btn btn-primary btn-touch mob-only" data-go-mob="input">前往輸入情境</button>
+          <h3>如果跟我這樣說..... — 1～2 句白話變 300 字好文章</h3>
+          <p>系統會自動補足完整對話結構（發生經過、當下處置、背後原因、改善補償、共同約定），並提供台灣國中程度 CEFR A2 英文翻譯、核心單字卡與語音朗讀。</p>
+          <button type="button" class="btn btn-primary btn-touch mob-only" data-go-mob="input">先說說發生的事</button>
         </div>`;
       return;
     }
@@ -785,11 +785,11 @@
           <div class="article-card">
             <div class="article-card-head">
               <div class="article-card-title">
-                <strong>完整 5D 結構短文</strong>
+                <strong>如果跟我這樣說.....（中文完整短文）</strong>
                 <span id="inline-zh-count" class="badge ${len <= MAX_ZH_CHARS ? 'badge-fact' : 'badge-danger'}">${len} / 300 字${len <= MAX_ZH_CHARS ? ' ✓' : '（超過上限）'}</span>
               </div>
               <div class="row-gap">
-                <button type="button" class="btn btn-secondary btn-mini" data-resync="1">依 5D 重組</button>
+                <button type="button" class="btn btn-secondary btn-mini" data-resync="1">依結構重組</button>
                 <button type="button" class="btn btn-secondary btn-mini" data-copy="zh">複製中文</button>
               </div>
             </div>
@@ -797,9 +797,9 @@
             <div class="check-pills">
               <span class="check-pill">✓ D1 發生經過</span>
               <span class="check-pill">✓ D2 當下處理</span>
-              <span class="check-pill">✓ D3 背後真因</span>
+              <span class="check-pill">✓ D3 背後原因</span>
               <span class="check-pill">✓ D4 改善補償</span>
-              <span class="check-pill">✓ D5 生活公約</span>
+              <span class="check-pill">✓ D5 共同約定</span>
             </div>
           </div>
 
@@ -832,7 +832,7 @@
     } else if (activeRTab === 'd1') {
       canvas.innerHTML = `
         <div class="step-stack">
-          <div class="step-heading">D1 事實要素（修改後回「中英短文」可一鍵重組）</div>
+          <div class="step-heading">D1 發生經過（修改後回「中英短文」可一鍵重組）</div>
           <div class="grid-2">
             <div class="field col-span-2"><label>事件標題</label><input class="control" data-edit="title" value="${escapeHtml(data.title)}"></div>
             <div class="field"><label>Who 人物</label><input class="control" data-edit="d1.who" value="${escapeHtml(data.d1.who)}"></div>
@@ -848,7 +848,7 @@
         d2: 'D2：當下緊急處置（先穩住現場與情緒）',
         d3: 'D3：背後真正原因（不貼標籤找動機）',
         d4: 'D4：未來改善與補償作法',
-        d5: 'D5：共同訂立的生活公約'
+        d5: 'D5：共同訂立的生活約定'
       };
       canvas.innerHTML = `
         <div class="step-stack">
@@ -952,9 +952,9 @@
   }
 
   function exportWord() {
-    if (!data.articleZh) { showToast('請先生成雙語短文！', 'warning'); return; }
+    if (!data.articleZh) { showToast('請先整理出中英短文！', 'warning'); return; }
     const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>@page S{size:595.3pt 841.9pt;margin:1.8cm;}body{font-family:'Microsoft JhengHei',sans-serif;font-size:10pt;}table{width:100%;border-collapse:collapse;margin-bottom:8pt;}th,td{border:1px solid #b5c2bc;padding:5pt;font-size:9.2pt;}th{background:#f8fafc;color:#1b4d5c;}</style></head><body>${buildA4Html()}</body></html>`;
-    downloadBlob(new Blob(['\ufeff' + html], { type: 'application/msword;charset=utf-8' }), `5D_雙語結構短文_${sanitizeFilename(data.reportId)}.doc`);
+    downloadBlob(new Blob(['\ufeff' + html], { type: 'application/msword;charset=utf-8' }), `如果跟我這樣說_${sanitizeFilename(data.reportId)}.doc`);
     showToast('已匯出雙語 Word (.doc)！', 'success');
   }
 
@@ -1008,11 +1008,11 @@
 
   function buildPptxUint8Array(d) {
     const slides = [
-      { bg: '14222B', tc: 'FFFFFF', bc: 'DCE7EC', t: d.title, sub: `5D BILINGUAL ARTICLE | 中文 ${countZh(d.articleZh)}字 | CEFR A2`, lines: [`報告編號：${d.reportId}`, `建立日期：${d.dateCreated}`, `語氣風格：${TONE_LABELS[d.tone] || ''}`] },
-      { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: `完整 5D 結構短文（${countZh(d.articleZh)} / 300 字）`, sub: 'STRUCTURED CHINESE ARTICLE', lines: [d.articleZh] },
+      { bg: '14222B', tc: 'FFFFFF', bc: 'DCE7EC', t: d.title || '如果跟我這樣說.....', sub: `如果跟我這樣說..... | 中文 ${countZh(d.articleZh)}字 | CEFR A2`, lines: [`紀錄編號：${d.reportId}`, `建立日期：${d.dateCreated}`, `語氣風格：${TONE_LABELS[d.tone] || ''}`] },
+      { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: `如果跟我這樣說.....（${countZh(d.articleZh)} / 300 字）`, sub: 'STRUCTURED CHINESE ARTICLE', lines: [d.articleZh] },
       { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: '國中程度英文翻譯（CEFR A2）', sub: 'JUNIOR HIGH A2 ENGLISH VERSION', lines: [d.articleEn] },
       { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: 'CEFR A2 核心單字庫', sub: 'KEY A2 VOCABULARY', lines: (d.a2Vocab || []).map(v => `${v[0]} (${v[1]}) — ${v[2]}`) },
-      { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: '5D 結構拆解與生活公約', sub: '5D FRAMEWORK SUMMARY', lines: [`D1 事實：${d.d1.who}｜${d.d1.when}｜${d.d1.impactScope}`, `D2 處置：${d.d2}`, `D3 真因：${d.d3}`, `D4 改善：${d.d4}`, `D5 公約：${d.d5}`] }
+      { bg: 'FFFFFF', tc: '1B4D5C', bc: '14222B', t: '對話結構拆解與共同約定', sub: 'DIALOGUE SUMMARY', lines: [`D1 經過：${d.d1.who}｜${d.d1.when}｜${d.d1.impactScope}`, `D2 處置：${d.d2}`, `D3 原因：${d.d3}`, `D4 改善：${d.d4}`, `D5 約定：${d.d5}`] }
     ];
     const mkSlide = s => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${s.bg}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="T"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="685800" y="457200"/><a:ext cx="10820400" cy="1005840"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr wrap="square"/><a:lstStyle/><a:p><a:r><a:rPr lang="zh-TW" sz="2400" b="1"><a:solidFill><a:srgbClr val="${s.tc}"/></a:solidFill><a:ea typeface="Microsoft JhengHei"/></a:rPr><a:t>${escapeXml(s.t)}</a:t></a:r></a:p><a:p><a:r><a:rPr lang="en-US" sz="1100" b="1"><a:solidFill><a:srgbClr val="697A86"/></a:solidFill></a:rPr><a:t>${escapeXml(s.sub)}</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="B"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="685800" y="1645920"/><a:ext cx="10820400" cy="4663440"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr><p:txBody><a:bodyPr wrap="square"/><a:lstStyle/>${s.lines.map(l => `<a:p><a:pPr><a:spcBef><a:spcPts val="600"/></a:spcBef></a:pPr><a:r><a:rPr lang="zh-TW" sz="1700"><a:solidFill><a:srgbClr val="${s.bc}"/></a:solidFill><a:ea typeface="Microsoft JhengHei"/></a:rPr><a:t>${escapeXml(l)}</a:t></a:r></a:p>`).join('')}</p:txBody></p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
 
@@ -1034,19 +1034,19 @@
   }
 
   async function exportPpt() {
-    if (!data.articleZh) { showToast('請先生成雙語短文！', 'warning'); return; }
-    const fileName = `5D_雙語簡報_${sanitizeFilename(data.reportId)}.pptx`;
+    if (!data.articleZh) { showToast('請先整理出中英短文！', 'warning'); return; }
+    const fileName = `如果跟我這樣說_雙語簡報_${sanitizeFilename(data.reportId)}.pptx`;
     try {
       if (typeof window !== 'undefined' && typeof window.PptxGenJS === 'function') {
         const pptx = new window.PptxGenJS();
         pptx.layout = 'LAYOUT_16x9';
-        pptx.title = data.title || '5D 雙語結構短文';
+        pptx.title = data.title || '如果跟我這樣說.....';
 
         const s1 = pptx.addSlide();
         s1.background = { color: '14222B' };
-        s1.addText(data.title || '5D 雙語結構短文', { x: 0.7, y: 1.5, w: 11.9, h: 1.2, fontSize: 30, bold: true, color: 'FFFFFF', fontFace: 'Microsoft JhengHei' });
-        s1.addText(`5D BILINGUAL ARTICLE ｜ 中文 ${countZh(data.articleZh)} / 300 字 ｜ CEFR A2`, { x: 0.7, y: 2.8, w: 11.9, h: 0.6, fontSize: 15, color: 'A7DFD4', fontFace: 'Microsoft JhengHei' });
-        s1.addText(`報告編號：${data.reportId}   建立日期：${data.dateCreated}   語氣：${TONE_LABELS[data.tone]}`, { x: 0.7, y: 3.6, w: 11.9, h: 0.6, fontSize: 13, color: 'DCE7EC', fontFace: 'Microsoft JhengHei' });
+        s1.addText(data.title || '如果跟我這樣說.....', { x: 0.7, y: 1.5, w: 11.9, h: 1.2, fontSize: 30, bold: true, color: 'FFFFFF', fontFace: 'Microsoft JhengHei' });
+        s1.addText(`如果跟我這樣說..... ｜ 中文 ${countZh(data.articleZh)} / 300 字 ｜ CEFR A2`, { x: 0.7, y: 2.8, w: 11.9, h: 0.6, fontSize: 15, color: 'A7DFD4', fontFace: 'Microsoft JhengHei' });
+        s1.addText(`紀錄編號：${data.reportId}   建立日期：${data.dateCreated}   語氣：${TONE_LABELS[data.tone]}`, { x: 0.7, y: 3.6, w: 11.9, h: 0.6, fontSize: 13, color: 'DCE7EC', fontFace: 'Microsoft JhengHei' });
 
         const addCardSlide = (heading, sub, bodyText, font = 'Microsoft JhengHei', size = 18) => {
           const sl = pptx.addSlide();
@@ -1056,15 +1056,15 @@
           sl.addText(bodyText, { x: 0.6, y: 1.6, w: 12.1, h: 5.1, fontSize: size, color: '14222B', fontFace: font, valign: 'top', lineSpacingMultiple: 1.35 });
         };
 
-        addCardSlide(`完整 5D 結構短文（${countZh(data.articleZh)} / 300 字）`, 'STRUCTURED CHINESE ARTICLE', data.articleZh, 'Microsoft JhengHei', 19);
+        addCardSlide(`如果跟我這樣說.....（${countZh(data.articleZh)} / 300 字）`, 'STRUCTURED CHINESE ARTICLE', data.articleZh, 'Microsoft JhengHei', 19);
         addCardSlide('國中程度英文翻譯（CEFR A2）', 'JUNIOR HIGH A2 ENGLISH VERSION', data.articleEn, 'Segoe UI', 18);
         addCardSlide('CEFR A2 核心單字庫', 'KEY A2 VOCABULARY', (data.a2Vocab || []).map(v => `• ${v[0]} (${v[1]}) — ${v[2]}`).join('\n'), 'Microsoft JhengHei', 17);
-        addCardSlide('5D 結構拆解與生活公約', '5D FRAMEWORK SUMMARY', [
-          `D1 事實影響：${data.d1.who}｜${data.d1.when}｜${data.d1.impactScope}`,
+        addCardSlide('對話結構拆解與共同約定', 'DIALOGUE SUMMARY', [
+          `D1 發生經過：${data.d1.who}｜${data.d1.when}｜${data.d1.impactScope}`,
           `D2 當下處置：${data.d2}`,
-          `D3 真正原因：${data.d3}`,
+          `D3 背後原因：${data.d3}`,
           `D4 改善補償：${data.d4}`,
-          `D5 生活公約：${data.d5}`
+          `D5 共同約定：${data.d5}`
         ].join('\n\n'), 'Microsoft JhengHei', 15);
 
         await pptx.writeFile({ fileName });
