@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="5D 青春對話小幫手：桌機單畫面零捲動工作台＋手機原生底部 4 分頁拇指導覽，專為國高中生、家長與師長打造，100% 離線白話語意補完。">
+  <meta name="description" content="5D 雙語短文小幫手：輸入口語白話情境，自動補足 300 字內完整 5D 結構短文＋台灣國中程度 CEFR A2 英文翻譯與核心單字發音，桌機單畫面零捲動＋手機底部 4 分頁操作。">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' http://localhost:11434 https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self';">
-  <title>5D 青春對話小幫手 — 桌機單畫面・手機拇指友善版</title>
+  <title>5D 雙語短文小幫手 — 300字結構短文 ＋ 國中 A2 英文</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="libs/jszip.min.js" defer></script>
   <script src="libs/pptxgen.min.js" defer></script>
@@ -20,13 +20,13 @@
       <div class="topbar-left">
         <span class="brand-mark" aria-hidden="true">5D</span>
         <div class="brand-text">
-          <div class="brand-title">5D 青春對話小幫手</div>
-          <div class="brand-sub">國高中白話語意補完・單畫面工作台</div>
+          <div class="brand-title">5D 雙語短文小幫手</div>
+          <div class="brand-sub">口語白話 → 300字結構文章 ＋ 國中 A2 英文</div>
         </div>
-        <div class="status-pill" title="完整度與來源統計">
-          <strong id="score-num">0%</strong>
+        <div class="status-pill" title="中文文章字數上限 300 字與英文分級">
+          <strong id="char-count-pill">0/300字</strong>
           <span class="pill-sep hide-xs"></span>
-          <span id="source-stats" class="hide-xs">等待輸入</span>
+          <span class="hide-xs">CEFR A2</span>
         </div>
       </div>
 
@@ -37,7 +37,7 @@
         <button type="button" class="seg-btn" data-tone="teacher_record" aria-checked="false">師長輔導</button>
       </div>
 
-      <!-- 右側快捷動作（手機精簡保留 AI／清空，匯出置於手機底部匯出頁） -->
+      <!-- 右側快捷動作 -->
       <div class="topbar-actions">
         <button type="button" id="btn-open-ai" class="btn btn-ghost btn-xs">AI</button>
         <button type="button" id="btn-reset" class="btn btn-ghost btn-xs">清空</button>
@@ -54,7 +54,7 @@
       <aside class="left-pane" id="left-wrapper">
         <section class="panel-card mob-pane mob-active" id="pane-input">
           <div class="panel-head">
-            <h2>① 說出白話情境</h2>
+            <h2>① 輸入口語白話情境</h2>
             <button type="button" id="btn-auto-demo" class="btn btn-ghost btn-xs" title="快捷鍵 Alt+D">自動示範</button>
           </div>
           <select id="scenario-select" class="control select-full" aria-label="國高中情境範例快選">
@@ -68,8 +68,8 @@
             <option value="chore_self">範例：家務拖延＋書桌髒亂</option>
             <option value="safety_health">範例：騎車未戴安全帽搶黃燈</option>
           </select>
-          <label for="raw-input" class="sr-only">輸入白話生活情境</label>
-          <textarea id="raw-input" class="control raw-box" rows="4" placeholder="用平常說話的方式打 1～2 句，系統會自動補齊整個 5D 框架..."></textarea>
+          <label for="raw-input" class="sr-only">輸入口語白話情境</label>
+          <textarea id="raw-input" class="control raw-box" rows="4" placeholder="用平常說話的方式打 1～2 句，系統自動補足 ≤300 字完整 5D 結構短文 ＋ 國中程度 A2 英文翻譯..."></textarea>
 
           <!-- 手機與平板語氣切換 -->
           <div class="mob-tone-wrap">
@@ -81,52 +81,52 @@
             </div>
           </div>
 
-          <button type="button" id="btn-generate" class="btn btn-primary btn-cta">一鍵語意補完完整 5D 初稿</button>
+          <button type="button" id="btn-generate" class="btn btn-primary btn-cta">一鍵補足 300字短文 ＋ A2 英文</button>
         </section>
 
         <section class="panel-card refine-panel mob-pane" id="pane-refine">
           <div class="panel-head">
             <h2>② 口語追加微調</h2>
           </div>
-          <p class="mob-only footer-tip">再補一句平常的話，系統自動分類融入對應 5D 步驟並帶你查看結果。</p>
+          <p class="mob-only footer-tip">再補一句平常的話，系統自動融入結構短文並即時更新 ≤300 字中文與國中 A2 英文。</p>
           <div class="refine-row">
             <label for="refine-input" class="sr-only">輸入補充白話</label>
-            <input type="text" id="refine-input" class="control flex-1" placeholder="再補一句話，如：其實事後有道歉 / 約定11點收手機...">
+            <input type="text" id="refine-input" class="control flex-1" placeholder="再補一句話，如：事後有道歉 / 約定11點收手機...">
             <button type="button" id="btn-apply-refine" class="btn btn-primary btn-refine-go">融入</button>
           </div>
           <div class="hint-grid" id="refine-hints">
-            <button type="button" class="hint-chip" data-refine="其實事後他有主動小聲道歉，態度軟化願意談">＋ 補當下態度</button>
-            <button type="button" class="hint-chip" data-refine="真正原因是最近段考壓力太大，想靠玩手機喘口氣">＋ 補深層原因</button>
-            <button type="button" class="hint-chip" data-refine="我們約定平日晚上 11 點前手機放客廳充電，週末延後 1 小時">＋ 補具體公約</button>
-            <button type="button" class="hint-chip" data-refine="願意這週主動洗碗倒垃圾當補償，並提早 10 分鐘起床">＋ 補補償行動</button>
+            <button type="button" class="hint-chip" data-refine="其實事後他有主動小聲道歉">＋ 補事後道歉</button>
+            <button type="button" class="hint-chip" data-refine="真正原因是最近段考壓力太大">＋ 補段考壓力</button>
+            <button type="button" class="hint-chip" data-refine="約定平日晚上11點手機放客廳充電">＋ 補11點公約</button>
+            <button type="button" class="hint-chip" data-refine="這週主動洗碗倒垃圾當補償">＋ 補家事補償</button>
           </div>
           <div id="refine-feedback" class="refine-feedback" hidden></div>
 
           <div class="left-footer">
             <div class="legend-row">
-              <span class="badge badge-fact">原文事實</span>
-              <span class="badge badge-inferred">語意補完</span>
-              <span class="badge badge-confirmed">已確認</span>
+              <span class="badge badge-fact">中文 ≤ 300 字</span>
+              <span class="badge badge-confirmed">國中 CEFR A2 英文</span>
+              <span class="badge badge-inferred">單字庫＋發音</span>
             </div>
             <div class="row-gap">
-              <button type="button" id="btn-copy-narrative" class="btn btn-ghost btn-touch flex-1">複製完整陳述</button>
-              <button type="button" id="btn-confirm-all" class="btn btn-ghost btn-touch flex-1">全部標為已確認</button>
+              <button type="button" id="btn-copy-both" class="btn btn-ghost btn-touch flex-1">複製中英全文</button>
+              <button type="button" id="btn-speak-en-quick" class="btn btn-ghost btn-touch flex-1">🔊 朗讀 A2 英文</button>
             </div>
           </div>
         </section>
       </aside>
 
-      <!-- 右欄：7 分頁單畫面 5D 工作畫布 -->
+      <!-- 右欄：7 分頁單畫面雙語工作畫布 -->
       <section class="right-pane mob-pane" id="pane-right">
         <div class="right-head" id="right-tabs-bar">
-          <nav class="right-tabs" id="right-tabs" aria-label="5D 步驟切換">
-            <button type="button" class="rtab active" data-rtab="overview">初步陳述</button>
+          <nav class="right-tabs" id="right-tabs" aria-label="中英短文與 5D 步驟切換">
+            <button type="button" class="rtab active" data-rtab="article">中英短文</button>
             <button type="button" class="rtab" data-rtab="d1">D1 事實</button>
             <button type="button" class="rtab" data-rtab="d2">D2 處置</button>
             <button type="button" class="rtab" data-rtab="d3">D3 真因</button>
             <button type="button" class="rtab" data-rtab="d4">D4 改善</button>
             <button type="button" class="rtab" data-rtab="d5">D5 公約</button>
-            <button type="button" class="rtab desk-only" data-rtab="a4">A4 簽名報告</button>
+            <button type="button" class="rtab desk-only" data-rtab="a4">A4 雙語單</button>
           </nav>
           <div id="domain-badges" class="domain-badges"></div>
         </div>
@@ -141,10 +141,10 @@
         </div>
 
         <div class="right-footer" id="step-nav-footer">
-          <span class="footer-tip desk-only">所有欄位皆可直接點選編輯，修改後自動轉為「已確認」。</span>
+          <span class="footer-tip desk-only">自動嚴格控制中文 ≤ 300 字；點擊任一 A2 單字即可聽英語發音。</span>
           <div class="row-gap step-nav-btns">
-            <button type="button" id="btn-prev-tab" class="btn btn-secondary btn-touch flex-1-mob">← 上一步</button>
-            <button type="button" id="btn-next-tab" class="btn btn-primary btn-touch flex-1-mob">下一步 →</button>
+            <button type="button" id="btn-prev-tab" class="btn btn-secondary btn-touch flex-1-mob">← 上一頁</button>
+            <button type="button" id="btn-next-tab" class="btn btn-primary btn-touch flex-1-mob">下一頁 →</button>
           </div>
         </div>
       </section>
@@ -158,8 +158,8 @@
         <span>輸入</span>
       </button>
       <button type="button" class="mnav" data-mtab="draft">
-        <span class="mnav-ico" aria-hidden="true">📋</span>
-        <span>5D 初稿</span>
+        <span class="mnav-ico" aria-hidden="true">📖</span>
+        <span>中英短文</span>
       </button>
       <button type="button" class="mnav" data-mtab="refine">
         <span class="mnav-ico" aria-hidden="true">💬</span>
@@ -176,14 +176,14 @@
   <div id="ai-modal" class="modal-backdrop no-print" hidden>
     <div class="modal-card">
       <div class="panel-head">
-        <h3>雙軌語意補完引擎設定</h3>
+        <h3>雙軌雙語補完引擎設定</h3>
         <button type="button" id="btn-close-ai" class="btn btn-ghost btn-xs">關閉</button>
       </div>
       <div class="field">
-        <label for="llm-provider">補完引擎來源</label>
+        <label for="llm-provider">生成引擎來源</label>
         <select id="llm-provider" class="control">
-          <option value="offline" selected>本機離線語意補完引擎（預設・100% 離線免金鑰）</option>
-          <option value="gemini">Google Gemini API（需輸入個人 API Key）</option>
+          <option value="offline" selected>本機離線雙語引擎（預設・免 API Key・含國中 A2 字彙庫）</option>
+          <option value="gemini">Google Gemini API（可深度客製 ≤300字＋A2 翻譯）</option>
           <option value="ollama">本機 Ollama 伺服器（http://localhost:11434）</option>
         </select>
       </div>
@@ -195,12 +195,12 @@
         <label for="llm-model-name">模型名稱</label>
         <input type="text" id="llm-model-name" class="control" value="gemini-2.5-flash">
       </div>
-      <p class="footer-tip">預設離線模式完全不傳送資料；若外部 AI 連線逾時（30 秒），自動降級回離線引擎。</p>
-      <button type="button" id="btn-save-ai" class="btn btn-primary btn-cta" style="margin-top:6px;">套用設定</button>
+      <p class="footer-tip">預設離線引擎完全不傳送資料；若外部 AI 逾時（30 秒），自動降級回本機離線雙語引擎。</p>
+      <button type="button" id="btn-save-ai" class="btn btn-primary btn-cta">套用設定</button>
     </div>
   </div>
 
-  <!-- 專供 @media print 使用之 A4 列印紙本 -->
+  <!-- 專供 @media print 使用之 A4 雙語列印紙本 -->
   <div id="print-mount" class="print-mount"></div>
   <div id="toast-container" class="toast-container no-print" aria-live="polite"></div>
 
